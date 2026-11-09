@@ -227,7 +227,7 @@ export default function PopupApp() {
       </div>
 
       {/* Active site banner */}
-      {activeOrigin && (
+      {activeOrigin ? (
         <div className="site-banner">
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="site-label">Active site</div>
@@ -243,6 +243,15 @@ export default function PopupApp() {
               Subscribe site
             </button>
           )}
+        </div>
+      ) : (
+        <div className="site-banner">
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="site-label">Active site</div>
+            <div className="site-host" style={{ color: '#6b7280', fontWeight: 400 }}>
+              Open a manga site to subscribe
+            </div>
+          </div>
         </div>
       )}
 

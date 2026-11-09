@@ -11,7 +11,7 @@ export default defineConfig({
   manifest: {
     name: 'Manga Sync',
     description: 'Track the last chapter you read and see which manga have new chapters.',
-    permissions: ['storage', 'scripting', 'activeTab'],
+    permissions: ['storage', 'scripting', 'activeTab', 'tabs'],
     // Sites are added one by one at runtime with chrome.permissions.request.
     optional_host_permissions: ['https://*/*', 'http://*/*'],
     host_permissions: e2e ? ['http://127.0.0.1/*'] : [],
