@@ -1,0 +1,331 @@
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource-variable/outfit';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Outfit Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111827;
+  background: #f9fafb;
+  min-height: 100vh;
+  padding: 40px 24px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: 'Bricolage Grotesque Variable', 'Outfit Variable', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+input {
+  font: inherit;
+  color: inherit;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin-top: 4px;
+  margin-bottom: 28px;
+}
+
+.grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 24px;
+}
+
+@media (max-width: 860px) {
+  .grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.card-desc {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+/* Subscribed sites list */
+.site-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-bottom: 8px;
+}
+
+.site-origin {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.site-meta {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.btn-unsubscribe {
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #fee2e2;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.btn-unsubscribe:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+/* Add site form */
+.add-site-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.input-text {
+  flex: 1;
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  padding: 0 12px;
+  font-size: 14px;
+  outline: none;
+  background: #ffffff;
+}
+
+.input-text:focus {
+  border-color: #7c3aed;
+}
+
+.btn-primary {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: #7c3aed;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: #6d28d9;
+}
+
+/* Settings toggles */
+.settings-section {
+  margin-top: 24px;
+  grid-column: 1 / -1;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.setting-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+/* Switch toggle */
+.switch {
+  width: 44px;
+  height: 24px;
+  border-radius: 9999px;
+  background: #d1d5db;
+  position: relative;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.switch.on {
+  background: #7c3aed;
+}
+
+.switch.on::after {
+  transform: translateX(20px);
+}
+
+/* Manga table domain chips */
+.chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.chip {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 9999px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4b5563;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.chip:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.chip.active {
+  background: #7c3aed;
+  color: #ffffff;
+  border-color: #7c3aed;
+}
+
+.chip.active .chip-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.chip-badge {
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 9999px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Table */
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+td {
+  padding: 10px 10px 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.manga-col-title {
+  font-weight: 600;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #f3f4f6;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.btn-remove-link {
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 500;
+  transition: opacity 0.15s ease;
+}
+
+.btn-remove-link:hover {
+  text-decoration: underline;
+}
