@@ -6,7 +6,7 @@ const e2e = process.env.E2E === '1';
 
 export default defineConfig({
   srcDir: 'src',
-  outDir: e2e ? '.output-e2e' : '.output',
+  outDir: e2e ? '.output-e2e' : 'dist',
   modules: ['@wxt-dev/module-react'],
   manifest: {
     name: 'Manga Sync',
