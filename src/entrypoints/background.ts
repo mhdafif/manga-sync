@@ -134,7 +134,7 @@ async function handle(msg: Msg): Promise<Reply> {
       return { ok: true };
 
     case 'OPEN_OPTIONS':
-      await browser.runtime.openOptionsPage();
+      await browser.tabs.create({ url: browser.runtime.getURL('/options.html') });
       return { ok: true };
   }
 }

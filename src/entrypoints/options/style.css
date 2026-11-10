@@ -93,16 +93,25 @@ input {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  gap: 12px;
+  padding: 10px 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
   margin-bottom: 8px;
+}
+
+.site-item > div:first-child {
+  min-width: 0;
+  flex: 1;
 }
 
 .site-origin {
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .site-meta {
@@ -112,12 +121,14 @@ input {
 }
 
 .btn-unsubscribe {
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 6px;
   border: 1px solid #fee2e2;
   color: #ef4444;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.15s ease;
 }
 
@@ -135,6 +146,7 @@ input {
 
 .input-text {
   flex: 1;
+  min-width: 0;
   height: 38px;
   border-radius: 8px;
   border: 1px solid var(--border-strong);
@@ -156,6 +168,8 @@ input {
   color: #ffffff;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: background-color 0.15s ease;
 }
 

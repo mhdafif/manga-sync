@@ -16,6 +16,10 @@ export default defineConfig({
     optional_host_permissions: ['https://*/*', 'http://*/*'],
     host_permissions: e2e ? ['http://127.0.0.1/*'] : [],
     action: { default_title: 'Manga Sync' },
+    options_ui: {
+      page: 'options.html',
+      open_in_tab: true,
+    },
     icons: {
       16: 'icon/16.png',
       32: 'icon/32.png',
