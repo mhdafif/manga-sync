@@ -546,6 +546,26 @@ input, select {
   font-size: 12px;
   color: var(--text-muted);
   margin-top: 1px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.manga-sub-dot {
+  color: var(--text-faint);
+}
+
+.manga-time-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  color: var(--text-faint);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .manga-time-ago {

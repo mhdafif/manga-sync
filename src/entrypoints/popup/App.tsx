@@ -432,6 +432,15 @@ export default function PopupApp() {
           <div className="manga-sub">
             {showDomain && `${domain} · `}
             {STATUS_LABEL[m.status]}
+            {timeText && (
+              <>
+                <span className="manga-sub-dot">·</span>
+                <span className="manga-time-inline" title={timeText}>
+                  <Clock size={11} />
+                  <span>{timeText}</span>
+                </span>
+              </>
+            )}
           </div>
 
           <div className="manga-progress">
@@ -464,12 +473,6 @@ export default function PopupApp() {
                 </button>
               )}
             </div>
-            {timeText && (
-              <span className="manga-time-badge" title={timeText}>
-                <Clock size={11} />
-                <span>{timeText}</span>
-              </span>
-            )}
           </div>
         </div>
 
