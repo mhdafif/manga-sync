@@ -33,7 +33,13 @@ export default function PopupApp() {
   const [onlyUpdates, setOnlyUpdates] = useState(false);
   const [groupBySite, setGroupBySite] = useState(true);
   const [collapsedSites, setCollapsedSites] = useState<Record<string, boolean>>({});
-  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [menuState, setMenuState] = useState<{
+    mangaId: string;
+    top?: number;
+    bottom?: number;
+    right: number;
+    openUpwards: boolean;
+  } | null>(null);
   const [layoutMode, setLayoutMode] = useState<'list' | 'grid'>(() => {
     try {
       return (localStorage.getItem('manga_sync_layout') as 'list' | 'grid') || 'list';
@@ -64,7 +70,7 @@ export default function PopupApp() {
 
   // Close menu on click outside
   useEffect(() => {
-    const handleClick = () => setActiveMenuId(null);
+    const handleClick = () => setMenuState(null);
     window.addEventListener('click', handleClick);
     return () => window.removeEventListener('click', handleClick);
   }, []);
@@ -97,19 +103,53 @@ export default function PopupApp() {
     }
   };
 
+  const toggleMenu = (e: React.MouseEvent, mId: string) => {
+    e.stopPropagation();
+    if (menuState?.mangaId === mId) {
+      setMenuState(null);
+      return;
+    }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    // Menu is ~215px tall. Footer begins around 480px.
+    // If rect.bottom + 220 > 470, flip upwards!
+    const openUpwards = rect.bottom + 220 > 470;
+
+    let right = window.innerWidth - rect.right;
+    if (right < 12) right = 12;
+    if (window.innerWidth - right - 170 < 12) {
+      right = Math.max(12, window.innerWidth - 170 - 12);
+    }
+
+    if (openUpwards) {
+      setMenuState({
+        mangaId: mId,
+        bottom: window.innerHeight - rect.top + 4,
+        right,
+        openUpwards: true,
+      });
+    } else {
+      setMenuState({
+        mangaId: mId,
+        top: rect.bottom + 4,
+        right,
+        openUpwards: false,
+      });
+    }
+  };
+
   const handleStatusChange = async (id: string, status: Status) => {
     await send({ type: 'PATCH_MANGA', id, patch: { status } });
-    setActiveMenuId(null);
+    setMenuState(null);
   };
 
   const handleTogglePin = async (id: string, currentPinned: boolean) => {
     await send({ type: 'PATCH_MANGA', id, patch: { pinned: !currentPinned } });
-    setActiveMenuId(null);
+    setMenuState(null);
   };
 
   const handleRemove = async (id: string) => {
     await send({ type: 'REMOVE_MANGA', id });
-    setActiveMenuId(null);
+    setMenuState(null);
   };
 
   const toggleGroupCollapse = (domain: string) => {
@@ -196,40 +236,6 @@ export default function PopupApp() {
     return mangas.filter((m) => m.status === st).length;
   };
 
-  const renderDropdownMenu = (m: Manga) => (
-    <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
-      <div className="dropdown-label">Change status</div>
-      {STATUSES.map((st) => (
-        <button
-          key={st}
-          type="button"
-          className={`dropdown-item ${m.status === st ? 'active' : ''}`}
-          onClick={() => void handleStatusChange(m.id, st)}
-        >
-          <span>{STATUS_LABEL[st]}</span>
-          {m.status === st && <Check size={14} />}
-        </button>
-      ))}
-      <div className="dropdown-divider" />
-      <button
-        type="button"
-        className="dropdown-item"
-        onClick={() => void handleTogglePin(m.id, m.pinned)}
-      >
-        <span>{m.pinned ? 'Unpin' : 'Pin to top'}</span>
-        <Pin size={14} />
-      </button>
-      <button
-        type="button"
-        className="dropdown-item danger"
-        onClick={() => void handleRemove(m.id)}
-      >
-        <span>Remove</span>
-        <Trash2 size={14} />
-      </button>
-    </div>
-  );
-
   // Render 1-Column (List view) card
   const renderMangaCard = (m: Manga, showDomain: boolean) => {
     const isUpdated = hasUpdate(m);
@@ -302,17 +308,12 @@ export default function PopupApp() {
 
         <button
           type="button"
-          className="btn-more"
+          className={`btn-more ${menuState?.mangaId === m.id ? 'active' : ''}`}
           aria-label="More options"
-          onClick={(e) => {
-            e.stopPropagation();
-            setActiveMenuId(activeMenuId === m.id ? null : m.id);
-          }}
+          onClick={(e) => toggleMenu(e, m.id)}
         >
           <MoreVertical size={16} />
         </button>
-
-        {activeMenuId === m.id && renderDropdownMenu(m)}
       </div>
     );
   };
@@ -354,17 +355,12 @@ export default function PopupApp() {
 
           <button
             type="button"
-            className="btn-more-grid"
+            className={`btn-more-grid ${menuState?.mangaId === m.id ? 'active' : ''}`}
             aria-label="More options"
-            onClick={(e) => {
-              e.stopPropagation();
-              setActiveMenuId(activeMenuId === m.id ? null : m.id);
-            }}
+            onClick={(e) => toggleMenu(e, m.id)}
           >
             <MoreVertical size={14} />
           </button>
-
-          {activeMenuId === m.id && renderDropdownMenu(m)}
         </div>
 
         <div className="grid-card-body">
@@ -687,7 +683,7 @@ export default function PopupApp() {
       </div>
 
       {/* Manga list */}
-      <div className="manga-list">
+      <div className="manga-list" onScroll={() => setMenuState(null)}>
         {filteredMangas.length === 0 ? (
           <div className="empty-state">
             {totalTracked === 0 ? (
@@ -793,6 +789,62 @@ export default function PopupApp() {
           <span>Options</span>
         </button>
       </div>
+
+      {/* Fixed Root Dropdown Menu */}
+      {menuState && (() => {
+        const targetManga = mangas.find((m) => m.id === menuState.mangaId);
+        if (!targetManga) return null;
+        return (
+          <>
+            <div
+              className="dropdown-backdrop"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuState(null);
+              }}
+            />
+            <div
+              className={`dropdown-menu fixed-dropdown ${menuState.openUpwards ? 'upwards' : 'downwards'}`}
+              style={{
+                top: menuState.top !== undefined ? `${menuState.top}px` : 'auto',
+                bottom: menuState.bottom !== undefined ? `${menuState.bottom}px` : 'auto',
+                right: `${menuState.right}px`,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="dropdown-label">Change status</div>
+              {STATUSES.map((st) => (
+                <button
+                  key={st}
+                  type="button"
+                  className={`dropdown-item ${targetManga.status === st ? 'active' : ''}`}
+                  onClick={() => void handleStatusChange(targetManga.id, st)}
+                >
+                  <span>{STATUS_LABEL[st]}</span>
+                  {targetManga.status === st && <Check size={14} />}
+                </button>
+              ))}
+              <div className="dropdown-divider" />
+              <button
+                type="button"
+                className="dropdown-item"
+                onClick={() => void handleTogglePin(targetManga.id, targetManga.pinned)}
+              >
+                <span>{targetManga.pinned ? 'Unpin' : 'Pin to top'}</span>
+                <Pin size={14} />
+              </button>
+              <button
+                type="button"
+                className="dropdown-item danger"
+                onClick={() => void handleRemove(targetManga.id)}
+              >
+                <span>Remove</span>
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }

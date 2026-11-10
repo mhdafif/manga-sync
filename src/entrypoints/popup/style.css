@@ -700,15 +700,10 @@ input, select {
   z-index: 2;
 }
 
-.btn-more-grid:hover {
+.btn-more-grid:hover,
+.btn-more-grid.active {
   background: #ffffff;
   color: #111827;
-}
-
-.manga-card-grid .dropdown-menu {
-  top: 32px;
-  right: 6px;
-  z-index: 50;
 }
 
 .grid-card-body {
@@ -838,12 +833,23 @@ input, select {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.btn-more:hover {
+.btn-more:hover,
+.btn-more.active {
   background: #f3f4f6;
   color: #111827;
 }
 
-/* Dropdown Menu */
+/* Dropdown Backdrop & Menu */
+.dropdown-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9990;
+  background: transparent;
+}
+
 .dropdown-menu {
   position: absolute;
   top: 38px;
@@ -855,13 +861,40 @@ input, select {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   padding: 4px;
   z-index: 50;
-  animation: enter 0.15s ease-out;
+  animation: enterDown 0.15s ease-out;
 }
 
-@keyframes enter {
+.dropdown-menu.fixed-dropdown {
+  position: fixed !important;
+  z-index: 9999 !important;
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.18), 0 8px 12px -6px rgba(0, 0, 0, 0.08);
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
+}
+
+.dropdown-menu.fixed-dropdown.upwards {
+  animation: enterUp 0.15s ease-out;
+}
+
+.dropdown-menu.fixed-dropdown.downwards {
+  animation: enterDown 0.15s ease-out;
+}
+
+@keyframes enterDown {
   from {
     opacity: 0;
     transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes enterUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
