@@ -79,8 +79,8 @@ const mockMangas = {
     id: 'demo-scans.com::the-alchemists-return',
     siteOrigin: 'https://demo-scans.com',
     slug: 'the-alchemists-return',
-    title: "The Alchemist's Return",
-    coverUrl: makeCoverSvg('The Alchemist', '#ea580c', '#f97316', '🌸'),
+    title: "The Chronicle of Heavenly Cultivation and Divine Alchemy",
+    coverUrl: makeCoverSvg('Heavenly Cultivation', '#ea580c', '#f97316', '🌸'),
     seriesUrl: 'https://demo-scans.com/comics/the-alchemists-return',
     status: 'reading',
     pinned: false,
@@ -384,7 +384,7 @@ async function main() {
     // 5. Options Dashboard
     {
       const page = await browser.newPage();
-      await page.setViewport({ width: 1040, height: 820, deviceScaleFactor: 2 });
+      await page.setViewport({ width: 1100, height: 960, deviceScaleFactor: 2 });
       await setupMocks(page);
       await page.goto(`http://127.0.0.1:${PORT}/options.html`);
       await page.waitForSelector('.page-title');

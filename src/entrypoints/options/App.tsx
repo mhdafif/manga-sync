@@ -134,85 +134,82 @@ export default function OptionsApp() {
       <h1 className="font-display page-title">Manga Sync Settings</h1>
       <p className="page-subtitle">Manage subscribed domains, reading automation, and your saved manga library.</p>
 
-      <div className="grid-layout">
-        {/* Left Column: Subscribed Sites */}
-        <div>
-          <div className="card">
-            <h2 className="font-display card-title">Subscribed Sites</h2>
-            <p className="card-desc">The floating button only appears on sites in this whitelist.</p>
+      <div className="options-stack">
+        {/* Subscribed Sites Section */}
+        <div className="card sites-section">
+          <h2 className="font-display card-title">Subscribed Sites</h2>
+          <p className="card-desc">The floating button only appears on sites in this whitelist.</p>
 
-            {sites.length === 0 ? (
-              <p style={{ color: 'var(--text-faint)', fontSize: '13px', margin: '16px 0' }}>
-                No sites subscribed yet. Add a domain below or subscribe from the popup.
-              </p>
-            ) : (
-              <div>
-                {sites.map((site) => {
-                  const mangaCount = mangas.filter((m) => m.siteOrigin === site.origin).length;
-                  const addedDate = new Date(site.addedAt).toLocaleDateString([], {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  });
-
-                  return (
-                    <div key={site.origin} className="site-item">
-                      <div>
-                        <a
-                          className="site-origin site-link"
-                          href={site.origin}
-                          target="_blank"
-                          rel="noreferrer"
-                          title={`Open ${site.origin}`}
-                        >
-                          <span>{hostOf(site.origin)}</span>
-                          <ExternalLink size={12} />
-                        </a>
-                        <div className="site-meta">
-                          adapter: {site.adapterId} · {mangaCount} manga · since {addedDate}
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn-unsubscribe"
-                        onClick={() => void handleUnsubscribe(site.origin)}
-                      >
-                        Unsubscribe
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            <form onSubmit={handleAddSite} className="add-site-form">
-              <input
-                type="text"
-                className="input-text"
-                placeholder="e.g. asurascans.com"
-                value={newSiteInput}
-                onChange={(e) => setNewSiteInput(e.target.value)}
-              />
-              <button type="submit" className="btn-primary">
-                Add site
-              </button>
-            </form>
-
-            {addError && (
-              <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '8px' }}>{addError}</p>
-            )}
-
-            <p style={{ color: 'var(--text-faint)', fontSize: '11px', marginTop: '10px' }}>
-              Chrome will display a permission prompt when adding a new domain.
+          {sites.length === 0 ? (
+            <p style={{ color: 'var(--text-faint)', fontSize: '13px', margin: '16px 0' }}>
+              No sites subscribed yet. Add a domain below or subscribe from the popup.
             </p>
-          </div>
+          ) : (
+            <div className="sites-grid">
+              {sites.map((site) => {
+                const mangaCount = mangas.filter((m) => m.siteOrigin === site.origin).length;
+                const addedDate = new Date(site.addedAt).toLocaleDateString([], {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                });
+
+                return (
+                  <div key={site.origin} className="site-item">
+                    <div>
+                      <a
+                        className="site-origin site-link"
+                        href={site.origin}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={`Open ${site.origin}`}
+                      >
+                        <span>{hostOf(site.origin)}</span>
+                        <ExternalLink size={12} />
+                      </a>
+                      <div className="site-meta">
+                        adapter: {site.adapterId} · {mangaCount} manga · since {addedDate}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-unsubscribe"
+                      onClick={() => void handleUnsubscribe(site.origin)}
+                    >
+                      Unsubscribe
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <form onSubmit={handleAddSite} className="add-site-form">
+            <input
+              type="text"
+              className="input-text"
+              placeholder="e.g. asurascans.com"
+              value={newSiteInput}
+              onChange={(e) => setNewSiteInput(e.target.value)}
+            />
+            <button type="submit" className="btn-primary">
+              Add site
+            </button>
+          </form>
+
+          {addError && (
+            <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '8px' }}>{addError}</p>
+          )}
+
+          <p style={{ color: 'var(--text-faint)', fontSize: '11px', marginTop: '10px' }}>
+            Chrome will display a permission prompt when adding a new domain.
+          </p>
         </div>
 
-        {/* Right Column: Manga Library */}
-        <div>
-          <div className="card">
-            <h2 className="font-display card-title">My Manga Library</h2>
-            <p className="card-desc">Filter by site source and view reading progress.</p>
+        {/* Section 2: My Manga Library - Dedicated 1 Full Row */}
+        <div className="card library-section">
+          <h2 className="font-display card-title">My Manga Library</h2>
+          <p className="card-desc">Filter by site source and view reading progress.</p>
 
             {/* Search by title */}
             <div className="options-search-box">
@@ -336,10 +333,9 @@ export default function OptionsApp() {
               </table>
             </div>
           </div>
-        </div>
 
-        {/* Full-width bottom card: Automation & Reading Settings */}
-        <div className="card settings-section">
+        {/* Section 3: Preferences */}
+        <div className="card preferences-section">
           <h2 className="font-display card-title">Preferences</h2>
           <p className="card-desc">Configure automation and background sync behavior.</p>
 
