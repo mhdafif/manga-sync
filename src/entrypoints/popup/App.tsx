@@ -1,16 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
-import { ArrowLeft, Check, ChevronDown, ExternalLink, MoreVertical, Pin, RefreshCw, Search, Settings, Trash2, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  Clock,
+  ExternalLink,
+  LayoutGrid,
+  LayoutList,
+  MoreVertical,
+  Pin,
+  RefreshCw,
+  Search,
+  Settings,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { countUpdates, groupByDomain, hasUpdate, newCount, sortMangas, timeAgo } from '../../core/logic';
 import { send } from '../../core/messages';
 import { requestSite } from '../../core/sites';
 import { getState, onStateChange } from '../../core/storage';
 import { STATUSES, STATUS_LABEL, type AppState, type Manga, type Status } from '../../core/types';
-import { hostOf, normalizeOrigin } from '../../core/url';
+import { hostOf, isMangaWebsite, normalizeOrigin } from '../../core/url';
 
 export default function PopupApp() {
   const [appState, setAppState] = useState<AppState | null>(null);
   const [activeOrigin, setActiveOrigin] = useState<string | null>(null);
+  const [activeTabInfo, setActiveTabInfo] = useState<{ url?: string; title?: string } | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | Status>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,6 +34,13 @@ export default function PopupApp() {
   const [groupBySite, setGroupBySite] = useState(true);
   const [collapsedSites, setCollapsedSites] = useState<Record<string, boolean>>({});
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [layoutMode, setLayoutMode] = useState<'list' | 'grid'>(() => {
+    try {
+      return (localStorage.getItem('manga_sync_layout') as 'list' | 'grid') || 'list';
+    } catch {
+      return 'list';
+    }
+  });
   const [view, setView] = useState<'main' | 'options'>('main');
   const [newSiteInput, setNewSiteInput] = useState('');
   const [addSiteError, setAddSiteError] = useState<string | null>(null);
@@ -34,6 +57,7 @@ export default function PopupApp() {
       if (tab?.url) {
         const origin = normalizeOrigin(tab.url);
         setActiveOrigin(origin);
+        setActiveTabInfo({ url: tab.url, title: tab.title || '' });
       }
     }).catch(() => undefined);
   }, []);
@@ -150,17 +174,66 @@ export default function PopupApp() {
     })
   );
 
+  const handleSetLayout = (mode: 'list' | 'grid') => {
+    setLayoutMode(mode);
+    try {
+      localStorage.setItem('manga_sync_layout', mode);
+    } catch {}
+  };
+
+  const isManga = isMangaWebsite(activeTabInfo?.url, activeTabInfo?.title);
+  const showSubscribeBanner = Boolean(activeOrigin && !isCurrentSubscribed && isManga);
+
   const getStatusCount = (st: 'all' | Status) => {
     if (st === 'all') return mangas.length;
     return mangas.filter((m) => m.status === st).length;
   };
 
-  // Render individual manga item card
+  const renderDropdownMenu = (m: Manga) => (
+    <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
+      <div className="dropdown-label">Change status</div>
+      {STATUSES.map((st) => (
+        <button
+          key={st}
+          type="button"
+          className={`dropdown-item ${m.status === st ? 'active' : ''}`}
+          onClick={() => void handleStatusChange(m.id, st)}
+        >
+          <span>{STATUS_LABEL[st]}</span>
+          {m.status === st && <Check size={14} />}
+        </button>
+      ))}
+      <div className="dropdown-divider" />
+      <button
+        type="button"
+        className="dropdown-item"
+        onClick={() => void handleTogglePin(m.id, m.pinned)}
+      >
+        <span>{m.pinned ? 'Unpin' : 'Pin to top'}</span>
+        <Pin size={14} />
+      </button>
+      <button
+        type="button"
+        className="dropdown-item danger"
+        onClick={() => void handleRemove(m.id)}
+      >
+        <span>Remove</span>
+        <Trash2 size={14} />
+      </button>
+    </div>
+  );
+
+  // Render 1-Column (List view) card
   const renderMangaCard = (m: Manga, showDomain: boolean) => {
     const isUpdated = hasUpdate(m);
     const chaptersWaiting = newCount(m);
     const domain = hostOf(m.siteOrigin);
     const firstLetter = m.title ? m.title.charAt(0).toUpperCase() : 'M';
+    const timeText = isUpdated && (m.lastUpdatedAt || m.lastSyncedAt)
+      ? `Updated ${timeAgo(m.lastUpdatedAt || m.lastSyncedAt)}`
+      : m.lastReadAt
+      ? `Read ${timeAgo(m.lastReadAt)}`
+      : null;
 
     return (
       <div key={m.id} className="manga-card">
@@ -179,12 +252,6 @@ export default function PopupApp() {
           <div className="manga-sub">
             {showDomain && `${domain} · `}
             {STATUS_LABEL[m.status]}
-            {(m.lastUpdatedAt || m.lastSyncedAt) && isUpdated && (
-              <span className="manga-time-ago"> · Updated {timeAgo(m.lastUpdatedAt || m.lastSyncedAt)}</span>
-            )}
-            {!isUpdated && m.lastReadAt && (
-              <span className="manga-time-ago"> · Read {timeAgo(m.lastReadAt)}</span>
-            )}
           </div>
 
           <div className="manga-progress">
@@ -198,22 +265,30 @@ export default function PopupApp() {
             {isUpdated && <span className="pill-new-manga">+{chaptersWaiting} NEW</span>}
           </div>
 
-          <div className="manga-actions">
-            <button
-              type="button"
-              className="btn-read"
-              onClick={() => handleOpenUrl(m.lastReadUrl || m.seriesUrl)}
-            >
-              {m.lastReadChapter ? `Continue Ch ${m.lastReadChapter}` : 'Start reading'}
-            </button>
-            {isUpdated && m.latestChapterUrl && (
+          <div className="manga-card-footer">
+            <div className="manga-actions">
               <button
                 type="button"
-                className="btn-read-outline"
-                onClick={() => handleOpenUrl(m.latestChapterUrl)}
+                className="btn-read"
+                onClick={() => handleOpenUrl(m.lastReadUrl || m.seriesUrl)}
               >
-                Latest Ch {m.latestChapter}
+                {m.lastReadChapter ? `Continue Ch ${m.lastReadChapter}` : 'Start reading'}
               </button>
+              {isUpdated && m.latestChapterUrl && (
+                <button
+                  type="button"
+                  className="btn-read-outline"
+                  onClick={() => handleOpenUrl(m.latestChapterUrl)}
+                >
+                  Latest Ch {m.latestChapter}
+                </button>
+              )}
+            </div>
+            {timeText && (
+              <span className="manga-time-badge" title={timeText}>
+                <Clock size={11} />
+                <span>{timeText}</span>
+              </span>
             )}
           </div>
         </div>
@@ -230,42 +305,100 @@ export default function PopupApp() {
           <MoreVertical size={16} />
         </button>
 
-        {activeMenuId === m.id && (
-          <div className="dropdown-menu" onClick={(e) => e.stopPropagation()}>
-            <div className="dropdown-label">Change status</div>
-            {STATUSES.map((st) => (
-              <button
-                key={st}
-                type="button"
-                className={`dropdown-item ${m.status === st ? 'active' : ''}`}
-                onClick={() => void handleStatusChange(m.id, st)}
-              >
-                <span>{STATUS_LABEL[st]}</span>
-                {m.status === st && <Check size={14} />}
-              </button>
-            ))}
-            <div className="dropdown-divider" />
-            <button
-              type="button"
-              className="dropdown-item"
-              onClick={() => void handleTogglePin(m.id, m.pinned)}
-            >
-              <span>{m.pinned ? 'Unpin' : 'Pin to top'}</span>
-              <Pin size={14} />
-            </button>
-            <button
-              type="button"
-              className="dropdown-item danger"
-              onClick={() => void handleRemove(m.id)}
-            >
-              <span>Remove</span>
-              <Trash2 size={14} />
-            </button>
-          </div>
-        )}
+        {activeMenuId === m.id && renderDropdownMenu(m)}
       </div>
     );
   };
+
+  // Render 2-Column (Grid view) card with concise info
+  const renderMangaGridCard = (m: Manga, showDomain: boolean) => {
+    const isUpdated = hasUpdate(m);
+    const chaptersWaiting = newCount(m);
+    const domain = hostOf(m.siteOrigin);
+    const firstLetter = m.title ? m.title.charAt(0).toUpperCase() : 'M';
+    const timeText = isUpdated && (m.lastUpdatedAt || m.lastSyncedAt)
+      ? timeAgo(m.lastUpdatedAt || m.lastSyncedAt)
+      : m.lastReadAt
+      ? timeAgo(m.lastReadAt)
+      : null;
+
+    return (
+      <div key={m.id} className="manga-card-grid">
+        <div className="grid-cover-wrap">
+          {m.coverUrl ? (
+            <img src={m.coverUrl} alt="" className="grid-cover-img" />
+          ) : (
+            <div className="grid-cover-placeholder">
+              <span>{firstLetter}</span>
+            </div>
+          )}
+
+          {m.pinned && (
+            <div className="grid-badge-pin" title="Pinned">
+              <Pin size={10} fill="currentColor" />
+            </div>
+          )}
+
+          {isUpdated && (
+            <div className="grid-badge-new">
+              +{chaptersWaiting} NEW
+            </div>
+          )}
+
+          <button
+            type="button"
+            className="btn-more-grid"
+            aria-label="More options"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveMenuId(activeMenuId === m.id ? null : m.id);
+            }}
+          >
+            <MoreVertical size={14} />
+          </button>
+
+          {activeMenuId === m.id && renderDropdownMenu(m)}
+        </div>
+
+        <div className="grid-card-body">
+          <h4 className="font-display grid-manga-title" title={m.title}>
+            {m.title}
+          </h4>
+
+          <div className="grid-manga-sub">
+            {showDomain && <span className="grid-domain">{domain} · </span>}
+            <span>{STATUS_LABEL[m.status]}</span>
+          </div>
+
+          <div className="grid-progress-row">
+            <span className="grid-progress-text">
+              Ch. <b>{m.lastReadChapter ?? '—'}</b> / {m.latestChapter ?? '—'}
+            </span>
+            {timeText && (
+              <span className="grid-time-text" title={timeText}>
+                {timeText}
+              </span>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="btn-read-grid"
+            onClick={() => handleOpenUrl(isUpdated && m.latestChapterUrl ? m.latestChapterUrl : (m.lastReadUrl || m.seriesUrl))}
+          >
+            {isUpdated && m.latestChapter
+              ? `Ch ${m.latestChapter}`
+              : m.lastReadChapter
+              ? `Continue Ch ${m.lastReadChapter}`
+              : 'Read'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderItem = (m: Manga, showDomain: boolean) =>
+    layoutMode === 'grid' ? renderMangaGridCard(m, showDomain) : renderMangaCard(m, showDomain);
 
   if (view === 'options') {
     return (
@@ -427,32 +560,16 @@ export default function PopupApp() {
         </button>
       </div>
 
-      {/* Active site banner */}
-      {activeOrigin ? (
+      {/* Active site banner - only shown if on a manga site and not yet subscribed */}
+      {showSubscribeBanner && activeOrigin && (
         <div className="site-banner">
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="site-label">Active site</div>
+            <div className="site-label">Manga site detected</div>
             <div className="site-host">{hostOf(activeOrigin)}</div>
           </div>
-          {isCurrentSubscribed ? (
-            <div className="btn-subscribed">
-              <Check size={14} />
-              <span>Subscribed</span>
-            </div>
-          ) : (
-            <button type="button" className="btn-subscribe" onClick={handleSubscribeSite}>
-              Subscribe site
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="site-banner">
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="site-label">Active site</div>
-            <div className="site-host" style={{ color: '#6b7280', fontWeight: 400 }}>
-              Open a manga site to subscribe
-            </div>
-          </div>
+          <button type="button" className="btn-subscribe" onClick={handleSubscribeSite}>
+            Subscribe site
+          </button>
         </div>
       )}
 
@@ -501,24 +618,47 @@ export default function PopupApp() {
         ))}
       </div>
 
-      {/* Filter check options */}
+      {/* Filter check options & layout toggle */}
       <div className="filter-options">
-        <label className="filter-label">
-          <input
-            type="checkbox"
-            checked={onlyUpdates}
-            onChange={(e) => setOnlyUpdates(e.target.checked)}
-          />
-          <span>Only with updates</span>
-        </label>
-        <label className="filter-label">
-          <input
-            type="checkbox"
-            checked={groupBySite}
-            onChange={(e) => setGroupBySite(e.target.checked)}
-          />
-          <span>Group by site</span>
-        </label>
+        <div className="filter-checkboxes">
+          <label className="filter-label">
+            <input
+              type="checkbox"
+              checked={onlyUpdates}
+              onChange={(e) => setOnlyUpdates(e.target.checked)}
+            />
+            <span>Only with updates</span>
+          </label>
+          <label className="filter-label">
+            <input
+              type="checkbox"
+              checked={groupBySite}
+              onChange={(e) => setGroupBySite(e.target.checked)}
+            />
+            <span>Group by site</span>
+          </label>
+        </div>
+
+        <div className="layout-toggle-group">
+          <button
+            type="button"
+            className={`btn-layout-toggle ${layoutMode === 'list' ? 'active' : ''}`}
+            onClick={() => handleSetLayout('list')}
+            title="1 Column (List view)"
+            aria-label="1 Column view"
+          >
+            <LayoutList size={14} />
+          </button>
+          <button
+            type="button"
+            className={`btn-layout-toggle ${layoutMode === 'grid' ? 'active' : ''}`}
+            onClick={() => handleSetLayout('grid')}
+            title="2 Columns (Grid view)"
+            aria-label="2 Columns view"
+          >
+            <LayoutGrid size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Manga list */}
@@ -567,8 +707,8 @@ export default function PopupApp() {
                 </button>
 
                 {!isPinnedCollapsed && (
-                  <div className="group-items">
-                    {pinnedMangas.map((m) => renderMangaCard(m, true))}
+                  <div className={layoutMode === 'grid' ? 'group-items-grid' : 'group-items'}>
+                    {pinnedMangas.map((m) => renderItem(m, true))}
                   </div>
                 )}
               </div>
@@ -597,8 +737,8 @@ export default function PopupApp() {
                   </button>
 
                   {!isCollapsed && (
-                    <div className="group-items">
-                      {group.items.map((m) => renderMangaCard(m, false))}
+                    <div className={layoutMode === 'grid' ? 'group-items-grid' : 'group-items'}>
+                      {group.items.map((m) => renderItem(m, false))}
                     </div>
                   )}
                 </div>
@@ -606,7 +746,9 @@ export default function PopupApp() {
             })}
           </>
         ) : (
-          filteredMangas.map((m) => renderMangaCard(m, true))
+          <div className={layoutMode === 'grid' ? 'manga-grid' : 'manga-list-flat'}>
+            {filteredMangas.map((m) => renderItem(m, true))}
+          </div>
         )}
       </div>
 

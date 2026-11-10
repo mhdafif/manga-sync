@@ -56,3 +56,43 @@ export function titleFromSlug(slug: string): string {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 }
+
+/**
+ * Heuristic detector to check if a URL/domain or page title represents a manga/comic website.
+ */
+export function isMangaWebsite(url?: string, title?: string): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+    const host = parsed.hostname.toLowerCase();
+
+    // Common non-manga websites
+    const nonManga = [
+      'google.com', 'youtube.com', 'github.com', 'facebook.com', 'twitter.com', 'x.com',
+      'instagram.com', 'reddit.com', 'wikipedia.org', 'linkedin.com', 'amazon.com', 'netflix.com',
+      'apple.com', 'microsoft.com', 'bing.com', 'yahoo.com', 'spotify.com', 'twitch.tv',
+      'stackoverflow.com', 'medium.com', 'gitlab.com', 'figma.com', 'notion.so'
+    ];
+    if (nonManga.some((domain) => host === domain || host.endsWith(`.${domain}`))) return false;
+
+    // Domain keywords
+    const mangaHostRegex = /(manga|manhwa|manhua|comic|scan|komik|toon|raw|read|otaku|doujin|bato)/i;
+    if (mangaHostRegex.test(host)) return true;
+
+    // URL path keywords
+    const path = parsed.pathname.toLowerCase();
+    const mangaPathRegex = /\/(manga|manhwa|manhua|comic|comics|series|chapter|ch-|read|komik|webtoon)\b/i;
+    if (mangaPathRegex.test(path)) return true;
+
+    // Page title keywords
+    if (title) {
+      const mangaTitleRegex = /(chapter|ch\.|manga|manhwa|manhua|comic|komik|read online|webtoon|scanlation)/i;
+      if (mangaTitleRegex.test(title)) return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}

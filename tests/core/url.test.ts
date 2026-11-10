@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatChapter, hostOf, mangaId, normalizeOrigin, parseChapterNumber, stripHash, titleFromSlug } from '../../src/core/url';
+import { formatChapter, hostOf, isMangaWebsite, mangaId, normalizeOrigin, parseChapterNumber, stripHash, titleFromSlug } from '../../src/core/url';
 
 describe('core/url', () => {
   it('normalizes origins correctly', () => {
@@ -42,5 +42,20 @@ describe('core/url', () => {
   it('generates readable title from slug', () => {
     expect(titleFromSlug('nano-machine')).toBe('Nano Machine');
     expect(titleFromSlug('solo-leveling-ragnarok')).toBe('Solo Leveling Ragnarok');
+  });
+
+  it('detects manga websites correctly', () => {
+    expect(isMangaWebsite('https://manga18fx.com/manga/solo-leveling')).toBe(true);
+    expect(isMangaWebsite('https://asurascans.com/comics/nano-machine')).toBe(true);
+    expect(isMangaWebsite('https://mangadex.org/title/123')).toBe(true);
+    expect(isMangaWebsite('https://webtoons.com/en/fantasy/tower-of-god')).toBe(true);
+    expect(isMangaWebsite('https://komikcast.cz/')).toBe(true);
+    expect(isMangaWebsite('https://customreader.net/read/chapter-1', 'Read Chapter 1 Online')).toBe(true);
+
+    expect(isMangaWebsite('https://google.com')).toBe(false);
+    expect(isMangaWebsite('https://youtube.com/watch?v=123')).toBe(false);
+    expect(isMangaWebsite('https://github.com/facebook/react')).toBe(false);
+    expect(isMangaWebsite('chrome://extensions')).toBe(false);
+    expect(isMangaWebsite('')).toBe(false);
   });
 });
