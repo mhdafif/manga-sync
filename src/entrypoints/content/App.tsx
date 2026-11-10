@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BookOpen, Check, ExternalLink, Loader2, Pin, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { getAdapter } from '../../adapters';
-import { applyProgress, hasUpdate, newCount } from '../../core/logic';
+import { applyProgress, hasUpdate, newCount, nextChapter } from '../../core/logic';
 import { send } from '../../core/messages';
 import { getFabPos, getState, onStateChange, setFabPos } from '../../core/storage';
 import { STATUSES, STATUS_LABEL, type AppState, type PageInfo, type Status } from '../../core/types';
@@ -344,6 +344,13 @@ export default function ContentApp() {
   const isMangaInList = Boolean(manga);
   const isUpdated = manga ? hasUpdate(manga) : false;
   const newChapters = manga ? newCount(manga) : 0;
+  const next = manga ? nextChapter(manga) : null;
+  const latestUrl = manga?.latestChapterUrl;
+  // Only offer "Latest" when it is a different chapter from "Next"
+  const showLatest = Boolean(
+    manga && isUpdated && latestUrl && manga.latestChapter !== null && manga.latestChapter !== next?.number,
+  );
+  const goTo = (target: string) => window.location.assign(target);
 
   let fabClass = 'fab-btn fab--other';
   let fabContent: React.ReactNode = (
@@ -493,6 +500,21 @@ export default function ContentApp() {
                       width: `${Math.min(100, (manga.lastReadChapter / manga.latestChapter) * 100)}%`,
                     }}
                   />
+                </div>
+              )}
+
+              {(next || showLatest) && (
+                <div className="btn-row">
+                  {next && (
+                    <button type="button" className="btn-secondary" onClick={() => goTo(next.url)}>
+                      <span>Next Ch {next.number}</span>
+                    </button>
+                  )}
+                  {showLatest && latestUrl && (
+                    <button type="button" className="btn-secondary btn-latest" onClick={() => goTo(latestUrl)}>
+                      <span>Latest Ch {manga.latestChapter}</span>
+                    </button>
+                  )}
                 </div>
               )}
 

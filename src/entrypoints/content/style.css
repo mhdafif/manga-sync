@@ -323,6 +323,11 @@
   background: rgba(255, 255, 255, 0.14);
 }
 
+.btn-latest {
+  background: rgba(124, 58, 237, 0.3);
+  border-color: rgba(124, 58, 237, 0.5);
+}
+
 .btn-icon {
   width: 36px;
   height: 36px;

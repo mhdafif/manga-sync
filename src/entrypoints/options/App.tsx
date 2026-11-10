@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { Pin, Search, Trash2, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { BellOff, ExternalLink, Pin, Search, X } from 'lucide-react';
+import { downloadBackup, importBackupFile } from '../../core/backupIo';
 import { sortMangas, timeAgo } from '../../core/logic';
 import { send } from '../../core/messages';
 import { requestSite } from '../../core/sites';
 import { getState, onStateChange } from '../../core/storage';
-import { STATUS_LABEL, type AppState, type FabPositionSetting } from '../../core/types';
+import { applyTheme, watchSystemTheme } from '../../core/theme';
+import { STATUS_LABEL, type AppState, type FabPositionSetting, type ThemeSetting } from '../../core/types';
 import { hostOf, normalizeOrigin } from '../../core/url';
 
 export default function OptionsApp() {
@@ -13,11 +15,20 @@ export default function OptionsApp() {
   const [addError, setAddError] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<string>('all');
   const [mangaSearch, setMangaSearch] = useState('');
+  const [backupNotice, setBackupNotice] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     void getState().then(setAppState);
     return onStateChange(setAppState);
   }, []);
+
+  const theme = appState?.settings.theme;
+  useEffect(() => {
+    if (!theme) return;
+    applyTheme(theme);
+    return watchSystemTheme(theme);
+  }, [theme]);
 
   const sites = appState?.sites ?? [];
   const mangas = appState ? Object.values(appState.mangas) : [];
@@ -63,7 +74,7 @@ export default function OptionsApp() {
     await send({ type: 'UNSUBSCRIBE_SITE', origin });
   };
 
-  const handleToggleSetting = async (key: 'autoTrack' | 'bgTabFallback' | 'periodicSync') => {
+  const handleToggleSetting = async (key: 'autoTrack' | 'bgTabFallback' | 'periodicSync' | 'notifications') => {
     if (!appState) return;
     const current = appState.settings[key];
     await send({
@@ -77,6 +88,21 @@ export default function OptionsApp() {
       type: 'SET_SETTINGS',
       patch: { periodicSyncInterval: interval },
     });
+  };
+
+  const handleSetTheme = async (value: ThemeSetting) => {
+    await send({ type: 'SET_SETTINGS', patch: { theme: value } });
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      setBackupNotice(await importBackupFile(file, appState));
+    } catch (err) {
+      setBackupNotice(err instanceof Error ? err.message : String(err));
+    }
   };
 
   const handleSetFabPosition = async (pos: FabPositionSetting) => {
@@ -116,7 +142,7 @@ export default function OptionsApp() {
             <p className="card-desc">The floating button only appears on sites in this whitelist.</p>
 
             {sites.length === 0 ? (
-              <p style={{ color: '#9ca3af', fontSize: '13px', margin: '16px 0' }}>
+              <p style={{ color: 'var(--text-faint)', fontSize: '13px', margin: '16px 0' }}>
                 No sites subscribed yet. Add a domain below or subscribe from the popup.
               </p>
             ) : (
@@ -132,7 +158,16 @@ export default function OptionsApp() {
                   return (
                     <div key={site.origin} className="site-item">
                       <div>
-                        <div className="site-origin">{hostOf(site.origin)}</div>
+                        <a
+                          className="site-origin site-link"
+                          href={site.origin}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={`Open ${site.origin}`}
+                        >
+                          <span>{hostOf(site.origin)}</span>
+                          <ExternalLink size={12} />
+                        </a>
                         <div className="site-meta">
                           adapter: {site.adapterId} · {mangaCount} manga · since {addedDate}
                         </div>
@@ -167,7 +202,7 @@ export default function OptionsApp() {
               <p style={{ color: '#ef4444', fontSize: '12px', marginTop: '8px' }}>{addError}</p>
             )}
 
-            <p style={{ color: '#9ca3af', fontSize: '11px', marginTop: '10px' }}>
+            <p style={{ color: 'var(--text-faint)', fontSize: '11px', marginTop: '10px' }}>
               Chrome will display a permission prompt when adding a new domain.
             </p>
           </div>
@@ -243,7 +278,7 @@ export default function OptionsApp() {
                 <tbody>
                   {filteredMangas.length === 0 ? (
                     <tr>
-                      <td colSpan={selectedDomain === 'all' ? 6 : 5} style={{ textAlign: 'center', padding: '24px 0', color: '#9ca3af' }}>
+                      <td colSpan={selectedDomain === 'all' ? 6 : 5} style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-faint)' }}>
                         No manga in this filter.
                       </td>
                     </tr>
@@ -252,10 +287,19 @@ export default function OptionsApp() {
                       <tr key={m.id}>
                         <td className="manga-col-title">
                           {m.pinned && <Pin size={12} color="#7c3aed" fill="#7c3aed" />}
-                          <span title={m.title}>{m.title}</span>
+                          {m.muted && <BellOff size={12} color="var(--text-faint)" aria-label="Muted" />}
+                          <a
+                            className="title-link"
+                            href={m.seriesUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={`${m.title} — open series page`}
+                          >
+                            {m.title}
+                          </a>
                         </td>
                         {selectedDomain === 'all' && (
-                          <td style={{ color: '#6b7280', fontSize: '12px' }}>{hostOf(m.siteOrigin)}</td>
+                          <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{hostOf(m.siteOrigin)}</td>
                         )}
                         <td>
                           <span className="status-pill">{STATUS_LABEL[m.status]}</span>
@@ -263,7 +307,7 @@ export default function OptionsApp() {
                         <td>
                           <div>{m.lastReadChapter ?? '—'}</div>
                           {m.lastReadAt && (
-                            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '2px' }}>
                               {timeAgo(m.lastReadAt)}
                             </div>
                           )}
@@ -271,7 +315,7 @@ export default function OptionsApp() {
                         <td>
                           <div>{m.latestChapter ?? '—'}</div>
                           {(m.lastUpdatedAt || m.lastSyncedAt) && (
-                            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '2px' }}>
                               {timeAgo(m.lastUpdatedAt || m.lastSyncedAt)}
                             </div>
                           )}
@@ -323,7 +367,7 @@ export default function OptionsApp() {
             <div className="setting-item">
               <div>
                 <span className="setting-label">Floating button position</span>
-                <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '2px' }}>
                   Position of the reading progress button on manga sites
                 </div>
               </div>
@@ -343,7 +387,7 @@ export default function OptionsApp() {
             <div className="setting-item">
               <div>
                 <span className="setting-label">Periodic background sync</span>
-                <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '2px' }}>
                   Automatically checks for new chapters in background
                 </div>
               </div>
@@ -353,6 +397,60 @@ export default function OptionsApp() {
                 onClick={() => void handleToggleSetting('periodicSync')}
                 aria-label="Toggle periodic background sync"
               />
+            </div>
+
+            <div className="setting-item">
+              <div>
+                <span className="setting-label">Desktop notifications</span>
+                <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '2px' }}>
+                  {appState?.settings.periodicSync
+                    ? 'Notify when a new chapter is found'
+                    : 'Needs periodic background sync'}
+                </div>
+              </div>
+              <button
+                type="button"
+                className={`switch ${appState?.settings.notifications ? 'on' : ''}`}
+                onClick={() => void handleToggleSetting('notifications')}
+                aria-label="Toggle desktop notifications"
+              />
+            </div>
+
+            <div className="setting-item">
+              <span className="setting-label">Theme</span>
+              <select
+                className="select-interval-options"
+                value={appState?.settings.theme || 'system'}
+                onChange={(e) => void handleSetTheme(e.target.value as ThemeSetting)}
+              >
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </div>
+
+            <div className="setting-item">
+              <div>
+                <span className="setting-label">Backup</span>
+                <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '2px' }}>
+                  {backupNotice ?? 'Export your library to a file, or import one'}
+                </div>
+              </div>
+              <div className="backup-buttons">
+                <button type="button" className="btn-backup" onClick={() => appState && downloadBackup(appState)}>
+                  Export
+                </button>
+                <button type="button" className="btn-backup" onClick={() => importInputRef.current?.click()}>
+                  Import
+                </button>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  hidden
+                  onChange={(e) => void handleImportFile(e)}
+                />
+              </div>
             </div>
 
             {appState?.settings.periodicSync && (

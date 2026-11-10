@@ -37,8 +37,34 @@ export interface Manga {
   lastUpdatedAt?: number;
   lastSyncedAt?: number;
   syncError?: string;
+  /** The newest chapters seen on the last sync (oldest first). Used to find the next chapter. */
+  recentChapters?: ChapterInfo[];
+  /** Muted manga are left out of the badge count and notifications. */
+  muted?: boolean;
   addedAt: number;
 }
+
+export type ThemeSetting = 'system' | 'light' | 'dark';
+
+export const SORT_OPTIONS = ['smart', 'updated', 'new', 'read', 'title', 'added'] as const;
+export type SortBy = (typeof SORT_OPTIONS)[number];
+
+export const SORT_LABEL: Record<SortBy, string> = {
+  smart: 'Smart (updates first)',
+  updated: 'Recently updated',
+  new: 'Most new chapters',
+  read: 'Recently read',
+  title: 'Title A–Z',
+  added: 'Recently added',
+};
+
+/** One change applied to many manga at once. */
+export type BulkAction =
+  | { kind: 'status'; status: Status }
+  | { kind: 'pin'; value: boolean }
+  | { kind: 'mute'; value: boolean }
+  | { kind: 'markRead' }
+  | { kind: 'remove' };
 
 export type FabPositionSetting = 'draggable' | 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
@@ -53,6 +79,9 @@ export interface Settings {
   periodicSyncInterval: number;
   /** Position of floating action button on reading sites. */
   fabPosition: FabPositionSetting;
+  /** Desktop notification when periodic sync finds a new chapter. */
+  notifications: boolean;
+  theme: ThemeSetting;
 }
 
 export interface AppState {

@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import type { MangaPage, Settings, Status } from './types';
+import type { BulkAction, Manga, MangaPage, Settings, Status } from './types';
 
 export type Msg =
   | { type: 'SUBSCRIBE_SITE'; origin: string }
@@ -7,8 +7,11 @@ export type Msg =
   | { type: 'ADD_MANGA'; origin: string; page: MangaPage; status: Status; url: string }
   | { type: 'UPDATE_PROGRESS'; id: string; chapter: number; url: string }
   | { type: 'PAGE_SEEN'; id: string; seriesUrl: string }
-  | { type: 'PATCH_MANGA'; id: string; patch: { status?: Status; pinned?: boolean } }
+  | { type: 'PATCH_MANGA'; id: string; patch: { status?: Status; pinned?: boolean; muted?: boolean } }
   | { type: 'REMOVE_MANGA'; id: string }
+  | { type: 'BULK_ACTION'; ids: string[]; action: BulkAction }
+  | { type: 'RESTORE_MANGA'; mangas: Manga[] }
+  | { type: 'IMPORT_DATA'; mangas: Manga[]; settings?: Partial<Settings> }
   | { type: 'SET_SETTINGS'; patch: Partial<Settings> }
   | { type: 'SYNC_ONE'; id: string }
   | { type: 'SYNC_ALL' }
@@ -17,6 +20,9 @@ export type Msg =
 export interface Reply {
   ok: boolean;
   error?: string;
+  /** Set by IMPORT_DATA. */
+  added?: number;
+  updated?: number;
 }
 
 /** Ask the service worker to do something. It is the only writer of the saved state. */

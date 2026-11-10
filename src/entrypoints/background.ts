@@ -1,9 +1,10 @@
 import { browser } from 'wxt/browser';
-import { applyProgress, countReadingUpdates } from '../core/logic';
+import { mergeMangas } from '../core/backup';
+import { applyBulkAction, applyProgress, countReadingUpdates } from '../core/logic';
 import type { Msg, Reply } from '../core/messages';
 import { getState, mutate } from '../core/storage';
 import { subscribeSite, syncContentScripts, unsubscribeSite } from '../core/sites';
-import { syncAll, syncOne } from '../core/sync';
+import { syncAll, syncOne, type NewChapter } from '../core/sync';
 import { mangaId, titleFromSlug } from '../core/url';
 
 async function handle(msg: Msg): Promise<Reply> {
@@ -65,6 +66,7 @@ async function handle(msg: Msg): Promise<Reply> {
         if (!m) return;
         if (msg.patch.status) m.status = msg.patch.status;
         if (msg.patch.pinned !== undefined) m.pinned = msg.patch.pinned;
+        if (msg.patch.muted !== undefined) m.muted = msg.patch.muted;
       });
       return { ok: true };
 
@@ -73,6 +75,48 @@ async function handle(msg: Msg): Promise<Reply> {
         delete s.mangas[msg.id];
       });
       return { ok: true };
+
+    case 'BULK_ACTION':
+      await mutate((s) => {
+        for (const id of msg.ids) {
+          const m = s.mangas[id];
+          if (!m) continue;
+          if (msg.action.kind === 'remove') delete s.mangas[id];
+          else applyBulkAction(m, msg.action);
+        }
+      });
+      return { ok: true };
+
+    case 'RESTORE_MANGA':
+      await mutate((s) => {
+        for (const m of msg.mangas) {
+          if (!s.mangas[m.id]) s.mangas[m.id] = m;
+        }
+      });
+      return { ok: true };
+
+    case 'IMPORT_DATA': {
+      const result = await mutate((s) => {
+        const r = mergeMangas(s.mangas, msg.mangas);
+        if (msg.settings) {
+          const { fabPosition, autoTrack, bgTabFallback, periodicSync, periodicSyncInterval, notifications, theme } =
+            msg.settings;
+          s.settings = {
+            ...s.settings,
+            ...(fabPosition && { fabPosition }),
+            ...(autoTrack !== undefined && { autoTrack }),
+            ...(bgTabFallback !== undefined && { bgTabFallback }),
+            ...(periodicSync !== undefined && { periodicSync }),
+            ...(periodicSyncInterval !== undefined && { periodicSyncInterval }),
+            ...(notifications !== undefined && { notifications }),
+            ...(theme && { theme }),
+          };
+        }
+        return r;
+      });
+      await updatePeriodicSyncAlarm();
+      return { ok: true, ...result };
+    }
 
     case 'SET_SETTINGS':
       await mutate((s) => {
@@ -110,6 +154,34 @@ async function updatePeriodicSyncAlarm(): Promise<void> {
   }
 }
 
+const NOTIFY_PREFIX = 'chapter|';
+const MAX_SINGLE_NOTIFICATIONS = 4;
+
+async function notifyNewChapters(found: NewChapter[]): Promise<void> {
+  if (found.length === 0) return;
+  const { settings } = await getState();
+  if (!settings.notifications) return;
+  const iconUrl = browser.runtime.getURL('/icon/128.png');
+  if (found.length <= MAX_SINGLE_NOTIFICATIONS) {
+    for (const n of found) {
+      await browser.notifications.create(`${NOTIFY_PREFIX}${n.url}`, {
+        type: 'basic',
+        iconUrl,
+        title: n.title,
+        message: `Chapter ${n.chapter} is out`,
+      });
+    }
+    return;
+  }
+  const names = found.slice(0, 3).map((n) => n.title).join(', ');
+  await browser.notifications.create('summary', {
+    type: 'basic',
+    iconUrl,
+    title: `${found.length} manga have new chapters`,
+    message: `${names} and ${found.length - 3} more`,
+  });
+}
+
 async function updateBadge(): Promise<void> {
   const { mangas } = await getState();
   const n = countReadingUpdates(Object.values(mangas));
@@ -126,8 +198,13 @@ export default defineBackground(() => {
 
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === ALARM_PERIODIC_SYNC) {
-      void syncAll();
+      void syncAll().then(notifyNewChapters);
     }
+  });
+
+  browser.notifications.onClicked.addListener((id) => {
+    if (id.startsWith(NOTIFY_PREFIX)) void browser.tabs.create({ url: id.slice(NOTIFY_PREFIX.length) });
+    void browser.notifications.clear(id);
   });
 
   browser.storage.onChanged.addListener((_changes, area) => {

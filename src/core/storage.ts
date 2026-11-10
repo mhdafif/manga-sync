@@ -9,6 +9,8 @@ export const DEFAULT_SETTINGS: Settings = {
   periodicSync: false,
   periodicSyncInterval: 60,
   fabPosition: 'draggable',
+  notifications: false,
+  theme: 'system',
 };
 
 export function emptyState(): AppState {

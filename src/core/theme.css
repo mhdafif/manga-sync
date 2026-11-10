@@ -1,0 +1,38 @@
+/* Shared colour tokens for the popup and the options page. */
+:root {
+  color-scheme: light;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
+  --surface-3: #f9fafb;
+  --border: #e5e7eb;
+  --border-subtle: #f3f4f6;
+  --border-strong: #d1d5db;
+  --text: #111827;
+  --text-2: #374151;
+  --text-3: #4b5563;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+  --danger-bg: #fef2f2;
+  --danger-bg-2: #fee2e2;
+  --toggle-off: #d1d5db;
+  --accent-text: #7c3aed;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --surface: #16181d;
+  --surface-2: #252932;
+  --surface-3: #1c1f26;
+  --border: #2e333d;
+  --border-subtle: #262a32;
+  --border-strong: #3d4350;
+  --text: #f3f4f6;
+  --text-2: #d9dce3;
+  --text-3: #bcc1cc;
+  --text-muted: #9aa1ae;
+  --text-faint: #707786;
+  --danger-bg: rgba(239, 68, 68, 0.14);
+  --danger-bg-2: rgba(239, 68, 68, 0.28);
+  --toggle-off: #3d4350;
+  --accent-text: #a78bfa;
+}
