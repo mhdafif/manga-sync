@@ -41,6 +41,10 @@ input, select {
   color: inherit;
 }
 
+:root {
+  --footer-height: 48px;
+}
+
 .popup-container {
   display: flex;
   flex-direction: column;
@@ -951,11 +955,12 @@ input, select {
 /* Footer */
 .popup-footer {
   flex-shrink: 0;
+  height: var(--footer-height);
   margin-top: auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 16px;
+  padding: 0 16px;
   border-top: 1px solid var(--border-subtle);
   font-size: 12px;
   color: var(--text-muted);
@@ -1382,11 +1387,12 @@ input, select {
 
 .bulk-bar {
   flex-shrink: 0;
+  height: var(--footer-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 0 16px;
   border-top: 1px solid var(--border-subtle);
   background: var(--surface-3);
   font-size: 12px;
