@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BookOpen, Check, ExternalLink, Loader2, Pin, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { getAdapter } from '../../adapters';
 import { applyProgress, hasUpdate, newCount } from '../../core/logic';
@@ -47,6 +47,28 @@ export default function ContentApp() {
     initY: 0,
   });
   const hasMovedRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const getMaxPos = () => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    const w = rect?.width || 60;
+    const h = rect?.height || 60;
+    return {
+      maxX: Math.max(12, window.innerWidth - w - 12),
+      maxY: Math.max(12, window.innerHeight - h - 12),
+    };
+  };
+
+  // Keep the FAB fully inside the viewport whenever its size or position changes
+  useLayoutEffect(() => {
+    const { maxX, maxY } = getMaxPos();
+    const x = Math.max(12, Math.min(maxX, pos.x));
+    const y = Math.max(12, Math.min(maxY, pos.y));
+    if (x !== pos.x || y !== pos.y) {
+      currentPosRef.current = { x, y };
+      setPos({ x, y });
+    }
+  });
 
   // Listen to storage state changes
   useEffect(() => {
@@ -218,8 +240,7 @@ export default function ContentApp() {
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
         hasMovedRef.current = true;
       }
-      const maxX = Math.max(12, window.innerWidth - 60);
-      const maxY = Math.max(12, window.innerHeight - 60);
+      const { maxX, maxY } = getMaxPos();
       const newX = Math.max(12, Math.min(maxX, dragStartRef.current.initX + dx));
       const newY = Math.max(12, Math.min(maxY, dragStartRef.current.initY + dy));
       currentPosRef.current = { x: newX, y: newY };
@@ -369,7 +390,11 @@ export default function ContentApp() {
   const panelClass = `fab-panel ${popAbove ? 'pop-above' : 'pop-below'} ${alignRight ? 'align-right' : 'align-left'}`;
 
   return (
-    <div className="fab-container" style={{ left: `${pos.x}px`, top: `${pos.y}px` }}>
+    <div
+      ref={containerRef}
+      className="fab-container"
+      style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
+    >
       {panelOpen && (
         <div className={panelClass}>
           {pageInfo.kind === 'other' && !manga ? (

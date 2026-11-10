@@ -21,6 +21,7 @@
   position: fixed;
   pointer-events: auto;
   user-select: none;
+  width: max-content;
   z-index: 2147483647;
 }
 
@@ -31,6 +32,7 @@
 
 /* Floating Action Button */
 .fab-btn {
+  white-space: nowrap;
   height: 48px;
   padding: 0 16px;
   border-radius: 9999px;
