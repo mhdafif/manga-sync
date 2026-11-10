@@ -223,6 +223,66 @@ input {
   transform: translateX(20px);
 }
 
+/* Manga search box */
+.options-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 0 12px;
+  height: 36px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.options-search-box:focus-within {
+  background: #ffffff;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.12);
+}
+
+.options-search-box .search-icon {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.options-search-box .search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: #111827;
+  padding: 0;
+}
+
+.options-search-box .search-input::placeholder {
+  color: #9ca3af;
+}
+
+.options-search-box .btn-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #e5e7eb;
+  color: #6b7280;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: none;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.options-search-box .btn-search-clear:hover {
+  background: #d1d5db;
+  color: #111827;
+}
+
 /* Manga table domain chips */
 .chips-row {
   display: flex;

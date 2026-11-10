@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Pin, Trash2 } from 'lucide-react';
+import { Pin, Search, Trash2, X } from 'lucide-react';
+import { sortMangas } from '../../core/logic';
 import { send } from '../../core/messages';
 import { requestSite } from '../../core/sites';
 import { getState, onStateChange } from '../../core/storage';
@@ -11,6 +12,7 @@ export default function OptionsApp() {
   const [newSiteInput, setNewSiteInput] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<string>('all');
+  const [mangaSearch, setMangaSearch] = useState('');
 
   useEffect(() => {
     void getState().then(setAppState);
@@ -74,10 +76,18 @@ export default function OptionsApp() {
     await send({ type: 'REMOVE_MANGA', id });
   };
 
-  const filteredMangas = mangas.filter((m) => {
-    if (selectedDomain === 'all') return true;
-    return hostOf(m.siteOrigin) === selectedDomain;
-  });
+  const cleanSearch = mangaSearch.trim().toLowerCase();
+  const filteredMangas = sortMangas(
+    mangas.filter((m) => {
+      if (selectedDomain !== 'all' && hostOf(m.siteOrigin) !== selectedDomain) return false;
+      if (cleanSearch) {
+        const title = (m.title || '').toLowerCase();
+        const slug = (m.slug || '').toLowerCase();
+        if (!title.includes(cleanSearch) && !slug.includes(cleanSearch)) return false;
+      }
+      return true;
+    })
+  );
 
   return (
     <div className="container">
@@ -154,6 +164,28 @@ export default function OptionsApp() {
           <div className="card">
             <h2 className="font-display card-title">My Manga Library</h2>
             <p className="card-desc">Filter by site source and view reading progress.</p>
+
+            {/* Search by title */}
+            <div className="options-search-box">
+              <Search size={14} className="search-icon" />
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search manga by title…"
+                value={mangaSearch}
+                onChange={(e) => setMangaSearch(e.target.value)}
+              />
+              {mangaSearch && (
+                <button
+                  type="button"
+                  className="btn-search-clear"
+                  onClick={() => setMangaSearch('')}
+                  aria-label="Clear search"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
 
             {/* Domain filter chips */}
             <div className="chips-row">

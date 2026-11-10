@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
-import { ArrowLeft, Check, ChevronDown, ExternalLink, MoreVertical, Pin, RefreshCw, Settings, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, ExternalLink, MoreVertical, Pin, RefreshCw, Search, Settings, Trash2, X } from 'lucide-react';
 import { countUpdates, groupByDomain, hasUpdate, newCount, sortMangas } from '../../core/logic';
 import { send } from '../../core/messages';
 import { requestSite } from '../../core/sites';
@@ -13,6 +13,7 @@ export default function PopupApp() {
   const [activeOrigin, setActiveOrigin] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | Status>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [onlyUpdates, setOnlyUpdates] = useState(false);
   const [groupBySite, setGroupBySite] = useState(true);
   const [collapsedSites, setCollapsedSites] = useState<Record<string, boolean>>({});
@@ -125,8 +126,17 @@ export default function PopupApp() {
   };
 
   // Filter manga list
+  const cleanQuery = searchQuery.trim().toLowerCase();
+
   const filteredMangas = sortMangas(
     mangas.filter((m) => {
+      if (cleanQuery) {
+        const title = (m.title || '').toLowerCase();
+        const slug = (m.slug || '').toLowerCase();
+        if (!title.includes(cleanQuery) && !slug.includes(cleanQuery)) {
+          return false;
+        }
+      }
       if (statusFilter !== 'all' && m.status !== statusFilter) return false;
       if (onlyUpdates && !hasUpdate(m)) return false;
       return true;
@@ -352,7 +362,11 @@ export default function PopupApp() {
     );
   }
 
-  const domainGroups = groupBySite ? groupByDomain(filteredMangas, hostOf) : [];
+  const pinnedMangas = filteredMangas.filter((m) => m.pinned);
+  const unpinnedMangas = filteredMangas.filter((m) => !m.pinned);
+  const domainGroups = groupBySite ? groupByDomain(unpinnedMangas, hostOf) : [];
+  const pinnedUpdates = countUpdates(pinnedMangas);
+  const isPinnedCollapsed = collapsedSites['__pinned__'] ?? false;
 
   return (
     <div className="popup-container">
@@ -398,6 +412,28 @@ export default function PopupApp() {
           </div>
         </div>
       )}
+
+      {/* Search by title */}
+      <div className="search-box">
+        <Search size={14} className="search-icon" />
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search manga by title…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            className="btn-search-clear"
+            onClick={() => setSearchQuery('')}
+            aria-label="Clear search"
+          >
+            <X size={12} />
+          </button>
+        )}
+      </div>
 
       {/* Status tabs */}
       <div className="tabs-row">
@@ -446,40 +482,86 @@ export default function PopupApp() {
       <div className="manga-list">
         {filteredMangas.length === 0 ? (
           <div className="empty-state">
-            {totalTracked === 0
-              ? 'No manga tracked yet. Visit a manga page and click "+ Add manga"!'
-              : 'No manga matches the selected filter.'}
-          </div>
-        ) : groupBySite ? (
-          domainGroups.map((group) => {
-            const isCollapsed = collapsedSites[group.domain] ?? false;
-            return (
-              <div key={group.domain}>
+            {totalTracked === 0 ? (
+              'No manga tracked yet. Visit a manga page and click "+ Add manga"!'
+            ) : cleanQuery ? (
+              <div className="empty-search-state">
+                <div>No manga found matching &ldquo;{searchQuery}&rdquo;</div>
                 <button
                   type="button"
-                  className="group-header"
-                  onClick={() => toggleGroupCollapse(group.domain)}
+                  className="btn-clear-search-link"
+                  onClick={() => setSearchQuery('')}
+                >
+                  Clear search
+                </button>
+              </div>
+            ) : (
+              'No manga matches the selected filter.'
+            )}
+          </div>
+        ) : groupBySite ? (
+          <>
+            {/* Pinned grouping above all site groups */}
+            {pinnedMangas.length > 0 && (
+              <div className="pinned-group-block">
+                <button
+                  type="button"
+                  className="group-header pinned-group-header"
+                  onClick={() => toggleGroupCollapse('__pinned__')}
                 >
                   <ChevronDown
                     size={16}
-                    className={`group-chevron ${isCollapsed ? 'collapsed' : ''}`}
+                    className={`group-chevron ${isPinnedCollapsed ? 'collapsed' : ''}`}
                   />
-                  <div className="group-icon">{group.domain.charAt(0).toUpperCase()}</div>
-                  <span className="group-title font-display">{group.domain}</span>
-                  {group.updates > 0 && (
-                    <span className="badge-new-group">{group.updates} new</span>
+                  <div className="group-icon pinned-icon">
+                    <Pin size={11} fill="currentColor" />
+                  </div>
+                  <span className="group-title font-display">Pinned</span>
+                  {pinnedUpdates > 0 && (
+                    <span className="badge-new-group">{pinnedUpdates} new</span>
                   )}
-                  <span className="group-count">{group.items.length}</span>
+                  <span className="group-count">{pinnedMangas.length}</span>
                 </button>
 
-                {!isCollapsed && (
+                {!isPinnedCollapsed && (
                   <div className="group-items">
-                    {group.items.map((m) => renderMangaCard(m, false))}
+                    {pinnedMangas.map((m) => renderMangaCard(m, true))}
                   </div>
                 )}
               </div>
-            );
-          })
+            )}
+
+            {/* Site domain groups */}
+            {domainGroups.map((group) => {
+              const isCollapsed = collapsedSites[group.domain] ?? false;
+              return (
+                <div key={group.domain}>
+                  <button
+                    type="button"
+                    className="group-header"
+                    onClick={() => toggleGroupCollapse(group.domain)}
+                  >
+                    <ChevronDown
+                      size={16}
+                      className={`group-chevron ${isCollapsed ? 'collapsed' : ''}`}
+                    />
+                    <div className="group-icon">{group.domain.charAt(0).toUpperCase()}</div>
+                    <span className="group-title font-display">{group.domain}</span>
+                    {group.updates > 0 && (
+                      <span className="badge-new-group">{group.updates} new</span>
+                    )}
+                    <span className="group-count">{group.items.length}</span>
+                  </button>
+
+                  {!isCollapsed && (
+                    <div className="group-items">
+                      {group.items.map((m) => renderMangaCard(m, false))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
         ) : (
           filteredMangas.map((m) => renderMangaCard(m, true))
         )}

@@ -109,4 +109,20 @@ describe('core/logic', () => {
     // mangadex.org and asurascans.com each have 1 update, but sorted by updates then domain
     expect(groups.map(g => g.domain).sort()).toEqual(['asurascans.com', 'mangadex.org']);
   });
+
+  it('separates pinned mangas above domain groups', () => {
+    const p1 = createManga({ id: 'p1', title: 'Pinned Asura', pinned: true, siteOrigin: 'https://asurascans.com' });
+    const u1 = createManga({ id: 'u1', title: 'Unpinned Asura', pinned: false, siteOrigin: 'https://asurascans.com' });
+    const u2 = createManga({ id: 'u2', title: 'Unpinned MangaDex', pinned: false, siteOrigin: 'https://mangadex.org' });
+
+    const all = [p1, u1, u2];
+    const pinned = all.filter((m) => m.pinned);
+    const unpinned = all.filter((m) => !m.pinned);
+    const domainGroups = groupByDomain(unpinned, (origin) => new URL(origin).host);
+
+    expect(pinned.length).toBe(1);
+    expect(pinned[0].id).toBe('p1');
+    expect(domainGroups.length).toBe(2);
+    expect(domainGroups.some((g) => g.items.some((m) => m.id === 'p1'))).toBe(false);
+  });
 });
