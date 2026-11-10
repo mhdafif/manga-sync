@@ -31,8 +31,10 @@ export interface Manga {
   pinned: boolean;
   lastReadChapter: number | null;
   lastReadUrl?: string;
+  lastReadAt?: number;
   latestChapter: number | null;
   latestChapterUrl?: string;
+  lastUpdatedAt?: number;
   lastSyncedAt?: number;
   syncError?: string;
   addedAt: number;
@@ -43,6 +45,10 @@ export interface Settings {
   autoTrack: boolean;
   /** Open a background tab when a plain fetch is blocked. */
   bgTabFallback: boolean;
+  /** Periodic background sync enabled. */
+  periodicSync: boolean;
+  /** Interval in minutes between periodic background syncs. */
+  periodicSyncInterval: number;
 }
 
 export interface AppState {

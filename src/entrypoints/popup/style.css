@@ -490,6 +490,11 @@ input, select {
   margin-top: 1px;
 }
 
+.manga-time-ago {
+  color: #9ca3af;
+  font-size: 11px;
+}
+
 .manga-progress {
   display: flex;
   align-items: center;
@@ -836,6 +841,39 @@ input, select {
 
 .switch-toggle.on::after {
   transform: translateX(18px);
+}
+
+.pref-row-sub {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.pref-sub-label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.select-interval {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 12px;
+  color: #1f2937;
+  outline: none;
+  cursor: pointer;
+}
+
+.select-interval:focus {
+  border-color: #7c3aed;
 }
 
 .spin {

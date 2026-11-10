@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyProgress, countReadingUpdates, countUpdates, groupByDomain, hasUpdate, isSyncable, newCount, sortMangas } from '../../src/core/logic';
+import { applyProgress, countReadingUpdates, countUpdates, groupByDomain, hasUpdate, isSyncable, newCount, sortMangas, timeAgo } from '../../src/core/logic';
 import type { Manga } from '../../src/core/types';
 
 function createManga(overrides: Partial<Manga> = {}): Manga {
@@ -77,6 +77,7 @@ describe('core/logic', () => {
     expect(forward).toBe(true);
     expect(m.lastReadChapter).toBe(12);
     expect(m.lastReadUrl).toBe('ch-12');
+    expect(m.lastReadAt).toBeDefined();
 
     // Lower chapter does NOT revert progress
     const backward = applyProgress(m, 5, 'ch-5');
@@ -124,5 +125,15 @@ describe('core/logic', () => {
     expect(pinned[0].id).toBe('p1');
     expect(domainGroups.length).toBe(2);
     expect(domainGroups.some((g) => g.items.some((m) => m.id === 'p1'))).toBe(false);
+  });
+
+  it('formats relative time using timeAgo correctly', () => {
+    const now = Date.now();
+    expect(timeAgo(undefined)).toBe('');
+    expect(timeAgo(now - 10_000)).toBe('just now');
+    expect(timeAgo(now - 5 * 60_000)).toBe('5m ago');
+    expect(timeAgo(now - 3 * 3600_000)).toBe('3h ago');
+    expect(timeAgo(now - 2 * 86400_000)).toBe('2d ago');
+    expect(timeAgo(now - 45 * 86400_000)).toBe('1mo ago');
   });
 });

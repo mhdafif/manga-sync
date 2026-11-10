@@ -3,7 +3,12 @@ import type { AppState, Settings } from './types';
 
 const KEY = 'state';
 
-export const DEFAULT_SETTINGS: Settings = { autoTrack: true, bgTabFallback: true };
+export const DEFAULT_SETTINGS: Settings = {
+  autoTrack: true,
+  bgTabFallback: true,
+  periodicSync: false,
+  periodicSyncInterval: 60,
+};
 
 export function emptyState(): AppState {
   return { sites: [], mangas: {}, settings: { ...DEFAULT_SETTINGS } };

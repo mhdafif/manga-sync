@@ -223,6 +223,22 @@ input {
   transform: translateX(20px);
 }
 
+.select-interval-options {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 13px;
+  color: #1f2937;
+  outline: none;
+  cursor: pointer;
+}
+
+.select-interval-options:focus {
+  border-color: #7c3aed;
+}
+
 /* Manga search box */
 .options-search-box {
   display: flex;

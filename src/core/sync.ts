@@ -55,7 +55,13 @@ export async function syncOne(id: string): Promise<void> {
     if (data.title && (cur.title === titleFromSlug(cur.slug) || !cur.title)) cur.title = data.title;
     if (data.coverUrl) cur.coverUrl = data.coverUrl;
     if (data.canonicalUrl) cur.seriesUrl = data.canonicalUrl;
-    cur.latestChapter = data.latest!.number;
+    const newLatest = data.latest!.number;
+    if (cur.latestChapter !== newLatest) {
+      cur.latestChapter = newLatest;
+      cur.lastUpdatedAt = Date.now();
+    } else if (!cur.lastUpdatedAt) {
+      cur.lastUpdatedAt = cur.addedAt;
+    }
     cur.latestChapterUrl = data.latest!.url;
   });
 }

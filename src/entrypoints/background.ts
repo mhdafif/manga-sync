@@ -19,6 +19,7 @@ async function handle(msg: Msg): Promise<Reply> {
     case 'ADD_MANGA': {
       const { page } = msg;
       const id = mangaId(msg.origin, page.slug);
+      const now = Date.now();
       const added = await mutate((s) => {
         if (s.mangas[id]) return false;
         s.mangas[id] = {
@@ -32,8 +33,9 @@ async function handle(msg: Msg): Promise<Reply> {
           pinned: false,
           lastReadChapter: page.kind === 'chapter' ? page.chapter : null,
           lastReadUrl: page.kind === 'chapter' ? msg.url : undefined,
+          lastReadAt: page.kind === 'chapter' ? now : undefined,
           latestChapter: null,
-          addedAt: Date.now(),
+          addedAt: now,
         };
         return true;
       });
@@ -76,6 +78,7 @@ async function handle(msg: Msg): Promise<Reply> {
       await mutate((s) => {
         s.settings = { ...s.settings, ...msg.patch };
       });
+      await updatePeriodicSyncAlarm();
       return { ok: true };
 
     case 'SYNC_ONE':
@@ -89,6 +92,21 @@ async function handle(msg: Msg): Promise<Reply> {
     case 'OPEN_OPTIONS':
       await browser.runtime.openOptionsPage();
       return { ok: true };
+  }
+}
+
+const ALARM_PERIODIC_SYNC = 'PERIODIC_SYNC';
+
+async function updatePeriodicSyncAlarm(): Promise<void> {
+  const { settings } = await getState();
+  if (settings.periodicSync) {
+    const periodInMinutes = Math.max(15, settings.periodicSyncInterval || 60);
+    browser.alarms.create(ALARM_PERIODIC_SYNC, {
+      periodInMinutes,
+      delayInMinutes: periodInMinutes,
+    });
+  } else {
+    await browser.alarms.clear(ALARM_PERIODIC_SYNC);
   }
 }
 
@@ -106,13 +124,26 @@ export default defineBackground(() => {
     return true; // keep the channel open for the async reply
   });
 
+  browser.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === ALARM_PERIODIC_SYNC) {
+      void syncAll();
+    }
+  });
+
   browser.storage.onChanged.addListener((_changes, area) => {
     if (area === 'local') void updateBadge();
   });
 
-  browser.runtime.onInstalled.addListener(() => void syncContentScripts());
-  browser.runtime.onStartup.addListener(() => void syncContentScripts());
+  browser.runtime.onInstalled.addListener(() => {
+    void syncContentScripts();
+    void updatePeriodicSyncAlarm();
+  });
+  browser.runtime.onStartup.addListener(() => {
+    void syncContentScripts();
+    void updatePeriodicSyncAlarm();
+  });
 
   void browser.action.setBadgeBackgroundColor({ color: '#7c3aed' });
   void updateBadge();
+  void updatePeriodicSyncAlarm();
 });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Pin, Search, Trash2, X } from 'lucide-react';
-import { sortMangas } from '../../core/logic';
+import { sortMangas, timeAgo } from '../../core/logic';
 import { send } from '../../core/messages';
 import { requestSite } from '../../core/sites';
 import { getState, onStateChange } from '../../core/storage';
@@ -63,12 +63,19 @@ export default function OptionsApp() {
     await send({ type: 'UNSUBSCRIBE_SITE', origin });
   };
 
-  const handleToggleSetting = async (key: 'autoTrack' | 'bgTabFallback') => {
+  const handleToggleSetting = async (key: 'autoTrack' | 'bgTabFallback' | 'periodicSync') => {
     if (!appState) return;
     const current = appState.settings[key];
     await send({
       type: 'SET_SETTINGS',
       patch: { [key]: !current },
+    });
+  };
+
+  const handleSetSyncInterval = async (interval: number) => {
+    await send({
+      type: 'SET_SETTINGS',
+      patch: { periodicSyncInterval: interval },
     });
   };
 
@@ -246,8 +253,22 @@ export default function OptionsApp() {
                         <td>
                           <span className="status-pill">{STATUS_LABEL[m.status]}</span>
                         </td>
-                        <td>{m.lastReadChapter ?? '—'}</td>
-                        <td>{m.latestChapter ?? '—'}</td>
+                        <td>
+                          <div>{m.lastReadChapter ?? '—'}</div>
+                          {m.lastReadAt && (
+                            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                              {timeAgo(m.lastReadAt)}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <div>{m.latestChapter ?? '—'}</div>
+                          {(m.lastUpdatedAt || m.lastSyncedAt) && (
+                            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                              {timeAgo(m.lastUpdatedAt || m.lastSyncedAt)}
+                            </div>
+                          )}
+                        </td>
                         <td style={{ textAlign: 'right' }}>
                           <button
                             type="button"
@@ -291,6 +312,38 @@ export default function OptionsApp() {
                 aria-label="Toggle background tab fallback"
               />
             </div>
+
+            <div className="setting-item">
+              <div>
+                <span className="setting-label">Periodic background sync</span>
+                <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>
+                  Automatically checks for new chapters in background
+                </div>
+              </div>
+              <button
+                type="button"
+                className={`switch ${appState?.settings.periodicSync ? 'on' : ''}`}
+                onClick={() => void handleToggleSetting('periodicSync')}
+                aria-label="Toggle periodic background sync"
+              />
+            </div>
+
+            {appState?.settings.periodicSync && (
+              <div className="setting-item">
+                <span className="setting-label">Sync frequency</span>
+                <select
+                  className="select-interval-options"
+                  value={appState.settings.periodicSyncInterval || 60}
+                  onChange={(e) => void handleSetSyncInterval(Number(e.target.value))}
+                >
+                  <option value={30}>Every 30 minutes</option>
+                  <option value={60}>Every 1 hour</option>
+                  <option value={180}>Every 3 hours</option>
+                  <option value={360}>Every 6 hours</option>
+                  <option value={720}>Every 12 hours</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
       </div>

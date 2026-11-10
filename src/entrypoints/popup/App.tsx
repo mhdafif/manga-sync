@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { ArrowLeft, Check, ChevronDown, ExternalLink, MoreVertical, Pin, RefreshCw, Search, Settings, Trash2, X } from 'lucide-react';
-import { countUpdates, groupByDomain, hasUpdate, newCount, sortMangas } from '../../core/logic';
+import { countUpdates, groupByDomain, hasUpdate, newCount, sortMangas, timeAgo } from '../../core/logic';
 import { send } from '../../core/messages';
 import { requestSite } from '../../core/sites';
 import { getState, onStateChange } from '../../core/storage';
@@ -117,11 +117,18 @@ export default function PopupApp() {
     await send({ type: 'UNSUBSCRIBE_SITE', origin });
   };
 
-  const handleTogglePref = async (key: 'autoTrack' | 'bgTabFallback') => {
+  const handleTogglePref = async (key: 'autoTrack' | 'bgTabFallback' | 'periodicSync') => {
     if (!appState) return;
     await send({
       type: 'SET_SETTINGS',
       patch: { [key]: !appState.settings[key] },
+    });
+  };
+
+  const handleSetSyncInterval = async (interval: number) => {
+    await send({
+      type: 'SET_SETTINGS',
+      patch: { periodicSyncInterval: interval },
     });
   };
 
@@ -172,6 +179,12 @@ export default function PopupApp() {
           <div className="manga-sub">
             {showDomain && `${domain} · `}
             {STATUS_LABEL[m.status]}
+            {(m.lastUpdatedAt || m.lastSyncedAt) && isUpdated && (
+              <span className="manga-time-ago"> · Updated {timeAgo(m.lastUpdatedAt || m.lastSyncedAt)}</span>
+            )}
+            {!isUpdated && m.lastReadAt && (
+              <span className="manga-time-ago"> · Read {timeAgo(m.lastReadAt)}</span>
+            )}
           </div>
 
           <div className="manga-progress">
@@ -344,6 +357,36 @@ export default function PopupApp() {
                 aria-label="Toggle background tab fallback"
               />
             </div>
+
+            <div className="pref-row">
+              <div>
+                <span className="pref-label">Periodic background sync</span>
+                <div style={{ fontSize: '11px', color: '#9ca3af' }}>Auto-check chapters in background</div>
+              </div>
+              <button
+                type="button"
+                className={`switch-toggle ${appState?.settings.periodicSync ? 'on' : ''}`}
+                onClick={() => void handleTogglePref('periodicSync')}
+                aria-label="Toggle periodic background sync"
+              />
+            </div>
+
+            {appState?.settings.periodicSync && (
+              <div className="pref-row-sub">
+                <span className="pref-sub-label">Frequency:</span>
+                <select
+                  className="select-interval"
+                  value={appState.settings.periodicSyncInterval || 60}
+                  onChange={(e) => void handleSetSyncInterval(Number(e.target.value))}
+                >
+                  <option value={30}>Every 30 minutes</option>
+                  <option value={60}>Every 1 hour</option>
+                  <option value={180}>Every 3 hours</option>
+                  <option value={360}>Every 6 hours</option>
+                  <option value={720}>Every 12 hours</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
 
