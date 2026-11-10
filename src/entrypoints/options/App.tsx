@@ -267,12 +267,12 @@ export default function OptionsApp() {
               <table>
                 <thead>
                   <tr>
-                    <th>Title</th>
-                    {selectedDomain === 'all' && <th>Domain</th>}
-                    <th>Status</th>
-                    <th>Read</th>
-                    <th>Latest</th>
-                    <th></th>
+                    <th className="th-title">Title</th>
+                    {selectedDomain === 'all' && <th className="th-domain">Domain</th>}
+                    <th className="th-status">Status</th>
+                    <th className="th-read">Read</th>
+                    <th className="th-latest">Latest</th>
+                    <th className="th-action"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -286,8 +286,8 @@ export default function OptionsApp() {
                     filteredMangas.map((m) => (
                       <tr key={m.id}>
                         <td className="manga-col-title">
-                          {m.pinned && <Pin size={12} color="#7c3aed" fill="#7c3aed" />}
-                          {m.muted && <BellOff size={12} color="var(--text-faint)" aria-label="Muted" />}
+                          {m.pinned && <Pin size={14} className="col-pin-icon" fill="currentColor" />}
+                          {m.muted && <BellOff size={14} className="col-muted-icon" aria-label="Muted" />}
                           <a
                             className="title-link"
                             href={m.seriesUrl}
@@ -299,28 +299,28 @@ export default function OptionsApp() {
                           </a>
                         </td>
                         {selectedDomain === 'all' && (
-                          <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{hostOf(m.siteOrigin)}</td>
+                          <td className="col-domain">{hostOf(m.siteOrigin)}</td>
                         )}
-                        <td>
+                        <td className="col-status">
                           <span className="status-pill">{STATUS_LABEL[m.status]}</span>
                         </td>
-                        <td>
-                          <div>{m.lastReadChapter ?? '—'}</div>
+                        <td className="col-read">
+                          <div className="col-ch-num">{m.lastReadChapter ?? '—'}</div>
                           {m.lastReadAt && (
-                            <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '2px' }}>
+                            <div className="col-ch-time">
                               {timeAgo(m.lastReadAt)}
                             </div>
                           )}
                         </td>
-                        <td>
-                          <div>{m.latestChapter ?? '—'}</div>
+                        <td className="col-latest">
+                          <div className="col-ch-num">{m.latestChapter ?? '—'}</div>
                           {(m.lastUpdatedAt || m.lastSyncedAt) && (
-                            <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '2px' }}>
+                            <div className="col-ch-time">
                               {timeAgo(m.lastUpdatedAt || m.lastSyncedAt)}
                             </div>
                           )}
                         </td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td className="col-action">
                           <button
                             type="button"
                             className="btn-remove-link"
