@@ -129,10 +129,37 @@ const mockMangas = {
   },
 };
 
+const PORT = 4789;
+
 const mockSites = [
   { origin: 'https://demo-scans.com', adapterId: 'generic', addedAt: Date.now() - 86400 * 1000 * 120 },
   { origin: 'https://reader-hub.org', adapterId: 'generic', addedAt: Date.now() - 86400 * 1000 * 100 },
+  { origin: `http://127.0.0.1:${PORT}`, adapterId: 'generic', addedAt: Date.now() - 86400 * 1000 * 30 },
 ];
+
+mockMangas[`127.0.0.1:${PORT}::shadow-blade-chronicles`] = {
+  id: `127.0.0.1:${PORT}::shadow-blade-chronicles`,
+  siteOrigin: `http://127.0.0.1:${PORT}`,
+  slug: 'shadow-blade-chronicles',
+  title: 'Shadow Blade Chronicles',
+  coverUrl: makeCoverSvg('Shadow Blade Chronicles', '#4f46e5', '#7c3aed', '⚔️'),
+  seriesUrl: `http://127.0.0.1:${PORT}/comics/shadow-blade-chronicles`,
+  status: 'reading',
+  pinned: true,
+  lastReadChapter: 42,
+  lastReadUrl: `http://127.0.0.1:${PORT}/comics/shadow-blade-chronicles/chapter/42`,
+  lastReadAt: Date.now() - 3600 * 1000 * 4,
+  latestChapter: 45,
+  latestChapterUrl: `http://127.0.0.1:${PORT}/comics/shadow-blade-chronicles/chapter/45`,
+  lastUpdatedAt: Date.now() - 3600 * 1000 * 2,
+  lastSyncedAt: Date.now() - 3600 * 1000 * 2,
+  recentChapters: [
+    { number: 43, url: `http://127.0.0.1:${PORT}/comics/shadow-blade-chronicles/chapter/43` },
+    { number: 44, url: `http://127.0.0.1:${PORT}/comics/shadow-blade-chronicles/chapter/44` },
+    { number: 45, url: `http://127.0.0.1:${PORT}/comics/shadow-blade-chronicles/chapter/45` },
+  ],
+  addedAt: Date.now() - 86400 * 1000 * 30,
+};
 
 const mockState = {
   sites: mockSites,
@@ -155,7 +182,7 @@ async function main() {
   const server = http.createServer((req, res) => {
     const cleanUrl = req.url.split('?')[0];
 
-    if (cleanUrl === '/reader.html') {
+    if (cleanUrl === '/reader.html' || cleanUrl.startsWith('/comics/shadow-blade-chronicles/chapter/')) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.end(`<!DOCTYPE html>
 <html lang="en">
@@ -236,7 +263,6 @@ async function main() {
     res.end(fs.readFileSync(filePath));
   });
 
-  const PORT = 4789;
   await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
 
   const browser = await puppeteer.launch({
@@ -400,18 +426,18 @@ async function main() {
       const page = await browser.newPage();
       await page.setViewport({ width: 1100, height: 740, deviceScaleFactor: 2 });
       await setupMocks(page);
-      await page.goto(`http://127.0.0.1:${PORT}/reader.html`);
+      await page.goto(`http://127.0.0.1:${PORT}/comics/shadow-blade-chronicles/chapter/42`);
       await page.waitForSelector('manga-sync-fab-root', { timeout: 8000 });
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 800));
 
       await page.evaluate(() => {
         const host = document.querySelector('manga-sync-fab-root');
         const root = host?.shadowRoot;
         const btn = root?.querySelector('.fab-btn');
-        btn?.click();
+        if (btn) btn.click();
       });
 
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 600));
       await page.screenshot({ path: path.join(OUT_DIR, 'reader-fab.png') });
       console.log('✓ Captured: reader-fab.png');
       await page.close();
