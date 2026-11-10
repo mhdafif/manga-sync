@@ -20,11 +20,8 @@
 .fab-container {
   position: fixed;
   pointer-events: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 12px;
   user-select: none;
+  z-index: 2147483647;
 }
 
 .font-display {
@@ -43,18 +40,20 @@
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
+  cursor: grab;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-  transition: transform 0.1s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  touch-action: none;
 }
 
-.fab-btn:hover {
-  transform: translateY(-2px);
+.fab-btn.dragging {
+  cursor: grabbing !important;
+  box-shadow: 0 16px 32px -4px rgba(0, 0, 0, 0.7);
+  transform: scale(1.04);
+}
+
+.fab-btn:hover:not(.dragging) {
   box-shadow: 0 14px 28px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
-}
-
-.fab-btn:active {
-  transform: translateY(0);
 }
 
 .fab--add {
@@ -104,6 +103,7 @@
 
 /* Panel Popover */
 .fab-panel {
+  position: absolute;
   width: 320px;
   background: #181a20;
   color: #f3f4f6;
@@ -112,7 +112,25 @@
   box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.7);
   padding: 16px;
   animation: fab-pop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+}
+
+.fab-panel.pop-above {
+  bottom: calc(100% + 12px);
+}
+
+.fab-panel.pop-below {
+  top: calc(100% + 12px);
+}
+
+.fab-panel.align-right {
+  right: 0;
   transform-origin: bottom right;
+}
+
+.fab-panel.align-left {
+  left: 0;
+  transform-origin: bottom left;
 }
 
 @keyframes fab-pop {

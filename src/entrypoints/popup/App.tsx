@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
-import { Check, ChevronDown, MoreVertical, Pin, RefreshCw, Settings, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, ExternalLink, MoreVertical, Pin, RefreshCw, Settings, Trash2 } from 'lucide-react';
 import { countUpdates, groupByDomain, hasUpdate, newCount, sortMangas } from '../../core/logic';
 import { send } from '../../core/messages';
 import { requestSite } from '../../core/sites';
@@ -17,6 +17,9 @@ export default function PopupApp() {
   const [groupBySite, setGroupBySite] = useState(true);
   const [collapsedSites, setCollapsedSites] = useState<Record<string, boolean>>({});
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [view, setView] = useState<'main' | 'options'>('main');
+  const [newSiteInput, setNewSiteInput] = useState('');
+  const [addSiteError, setAddSiteError] = useState<string | null>(null);
 
   // Load state and subscribe
   useEffect(() => {
@@ -86,6 +89,39 @@ export default function PopupApp() {
 
   const toggleGroupCollapse = (domain: string) => {
     setCollapsedSites((prev) => ({ ...prev, [domain]: !prev[domain] }));
+  };
+
+  const handleAddSiteFromOptions = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddSiteError(null);
+    const origin = normalizeOrigin(newSiteInput);
+    if (!origin) {
+      setAddSiteError('Enter a valid domain (e.g. asurascans.com)');
+      return;
+    }
+    if (appState?.sites.some((s) => s.origin === origin)) {
+      setAddSiteError('Site already subscribed');
+      return;
+    }
+    const granted = await requestSite(origin);
+    if (!granted) {
+      setAddSiteError('Permission was not granted');
+      return;
+    }
+    await send({ type: 'SUBSCRIBE_SITE', origin });
+    setNewSiteInput('');
+  };
+
+  const handleUnsubscribeFromOptions = async (origin: string) => {
+    await send({ type: 'UNSUBSCRIBE_SITE', origin });
+  };
+
+  const handleTogglePref = async (key: 'autoTrack' | 'bgTabFallback') => {
+    if (!appState) return;
+    await send({
+      type: 'SET_SETTINGS',
+      patch: { [key]: !appState.settings[key] },
+    });
   };
 
   // Filter manga list
@@ -207,6 +243,114 @@ export default function PopupApp() {
       </div>
     );
   };
+
+  if (view === 'options') {
+    return (
+      <div className="popup-container">
+        <div className="header" style={{ borderBottom: '1px solid #f3f4f6' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              type="button"
+              className="btn-back"
+              onClick={() => setView('main')}
+              aria-label="Back to Manga List"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <h2 className="font-display header-title" style={{ fontSize: '18px' }}>
+              Settings
+            </h2>
+          </div>
+        </div>
+
+        <div className="options-scroll-body">
+          {/* Subscribed Sites Section */}
+          <div className="settings-card">
+            <h3 className="settings-card-title">
+              Subscribed Sites ({appState?.sites.length ?? 0})
+            </h3>
+            <p className="settings-card-desc">Floating button only appears on these sites.</p>
+
+            {appState?.sites.length === 0 ? (
+              <p style={{ color: '#9ca3af', fontSize: '12px', margin: '8px 0' }}>
+                No sites subscribed yet.
+              </p>
+            ) : (
+              appState?.sites.map((site) => (
+                <div key={site.origin} className="site-list-item">
+                  <div>
+                    <div className="site-item-domain">{hostOf(site.origin)}</div>
+                    <div className="site-item-sub">adapter: {site.adapterId}</div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-item-unsub"
+                    onClick={() => void handleUnsubscribeFromOptions(site.origin)}
+                  >
+                    Unsubscribe
+                  </button>
+                </div>
+              ))
+            )}
+
+            <form onSubmit={handleAddSiteFromOptions} className="add-site-row">
+              <input
+                type="text"
+                className="input-add-site"
+                placeholder="e.g. mangadex.org"
+                value={newSiteInput}
+                onChange={(e) => setNewSiteInput(e.target.value)}
+              />
+              <button type="submit" className="btn-add-site">
+                Add
+              </button>
+            </form>
+            {addSiteError && (
+              <p style={{ color: '#ef4444', fontSize: '11px', marginTop: '6px' }}>{addSiteError}</p>
+            )}
+          </div>
+
+          {/* Preferences Section */}
+          <div className="settings-card">
+            <h3 className="settings-card-title">Preferences</h3>
+            <p className="settings-card-desc">Automation and sync behavior.</p>
+
+            <div className="pref-row">
+              <span className="pref-label">Auto-track reading progress (3s delay)</span>
+              <button
+                type="button"
+                className={`switch-toggle ${appState?.settings.autoTrack !== false ? 'on' : ''}`}
+                onClick={() => void handleTogglePref('autoTrack')}
+                aria-label="Toggle auto-track progress"
+              />
+            </div>
+
+            <div className="pref-row">
+              <span className="pref-label">Background tab fallback if fetch blocked</span>
+              <button
+                type="button"
+                className={`switch-toggle ${appState?.settings.bgTabFallback !== false ? 'on' : ''}`}
+                onClick={() => void handleTogglePref('bgTabFallback')}
+                aria-label="Toggle background tab fallback"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="popup-footer">
+          <span>Manga Sync v0.1.0</span>
+          <button
+            type="button"
+            className="btn-options"
+            onClick={() => void send({ type: 'OPEN_OPTIONS' })}
+          >
+            <span>Open in full tab</span>
+            <ExternalLink size={12} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const domainGroups = groupBySite ? groupByDomain(filteredMangas, hostOf) : [];
 
@@ -351,7 +495,7 @@ export default function PopupApp() {
         <button
           type="button"
           className="btn-options"
-          onClick={() => void send({ type: 'OPEN_OPTIONS' })}
+          onClick={() => setView('options')}
         >
           <Settings size={14} />
           <span>Options</span>

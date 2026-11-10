@@ -14,15 +14,19 @@ export default function ContentApp() {
   const [syncing, setSyncing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<Status>('reading');
   const [progressNotice, setProgressNotice] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  // Position state (default bottom-right)
-  const [pos, setPos] = useState<{ right: number; bottom: number }>({ right: 24, bottom: 24 });
+  // Position state (default bottom-right: 24px from right, 24px from bottom)
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => ({
+    x: typeof window !== 'undefined' ? Math.max(16, window.innerWidth - 170) : 100,
+    y: typeof window !== 'undefined' ? Math.max(16, window.innerHeight - 75) : 100,
+  }));
   const isDraggingRef = useRef(false);
-  const dragStartRef = useRef<{ startX: number; startY: number; initRight: number; initBottom: number }>({
+  const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({
     startX: 0,
     startY: 0,
-    initRight: 24,
-    initBottom: 24,
+    initX: 0,
+    initY: 0,
   });
   const hasMovedRef = useRef(false);
 
@@ -35,8 +39,11 @@ export default function ContentApp() {
   // Restore saved FAB position
   useEffect(() => {
     void getFabPos().then((saved) => {
-      if (saved) {
-        setPos({ right: saved.x, bottom: saved.y });
+      if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+        // Clamp saved coordinates to current viewport
+        const clampedX = Math.max(12, Math.min(window.innerWidth - 60, saved.x));
+        const clampedY = Math.max(12, Math.min(window.innerHeight - 60, saved.y));
+        setPos({ x: clampedX, y: clampedY });
       }
     });
   }, []);
@@ -137,40 +144,69 @@ export default function ContentApp() {
   }
 
   // Dragging logic
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
+  const handleDragStart = (clientX: number, clientY: number) => {
     isDraggingRef.current = true;
     hasMovedRef.current = false;
+    setIsDragging(true);
     dragStartRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      initRight: pos.right,
-      initBottom: pos.bottom,
+      startX: clientX,
+      startY: clientY,
+      initX: pos.x,
+      initY: pos.y,
     };
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
+    const handlePointerMove = (moveX: number, moveY: number) => {
       if (!isDraggingRef.current) return;
-      const dx = moveEvent.clientX - dragStartRef.current.startX;
-      const dy = moveEvent.clientY - dragStartRef.current.startY;
+      const dx = moveX - dragStartRef.current.startX;
+      const dy = moveY - dragStartRef.current.startY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
         hasMovedRef.current = true;
       }
-      const newRight = Math.max(12, Math.min(window.innerWidth - 60, dragStartRef.current.initRight - dx));
-      const newBottom = Math.max(12, Math.min(window.innerHeight - 60, dragStartRef.current.initBottom - dy));
-      setPos({ right: newRight, bottom: newBottom });
+      const maxX = Math.max(12, window.innerWidth - 60);
+      const maxY = Math.max(12, window.innerHeight - 60);
+      const newX = Math.max(12, Math.min(maxX, dragStartRef.current.initX + dx));
+      const newY = Math.max(12, Math.min(maxY, dragStartRef.current.initY + dy));
+      setPos({ x: newX, y: newY });
     };
 
-    const handleMouseUp = () => {
+    const handlePointerUp = () => {
       isDraggingRef.current = false;
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      setIsDragging(false);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
       if (hasMovedRef.current) {
-        setFabPos({ x: pos.right, y: pos.bottom }).catch(() => undefined);
+        setFabPos({ x: pos.x, y: pos.y }).catch(() => undefined);
       }
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    const onMouseMove = (e: MouseEvent) => handlePointerMove(e.clientX, e.clientY);
+    const onMouseUp = () => handlePointerUp();
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches[0]) handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
+    };
+    const onTouchEnd = () => handlePointerUp();
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    // Prevent dragging when clicking inside open panel
+    if ((e.target as HTMLElement).closest('.fab-panel')) return;
+    e.preventDefault(); // Prevent text selection and HTML5 native drag!
+    handleDragStart(e.clientX, e.clientY);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('.fab-panel')) return;
+    if (e.touches[0]) {
+      handleDragStart(e.touches[0].clientX, e.touches[0].clientY);
+    }
   };
 
   const handleFabClick = () => {
@@ -269,10 +305,14 @@ export default function ContentApp() {
     );
   };
 
+  const popAbove = typeof window !== 'undefined' ? pos.y > window.innerHeight / 2 : true;
+  const alignRight = typeof window !== 'undefined' ? pos.x > window.innerWidth / 2 : true;
+  const panelClass = `fab-panel ${popAbove ? 'pop-above' : 'pop-below'} ${alignRight ? 'align-right' : 'align-left'}`;
+
   return (
-    <div className="fab-container" style={{ right: `${pos.right}px`, bottom: `${pos.bottom}px` }}>
+    <div className="fab-container" style={{ left: `${pos.x}px`, top: `${pos.y}px` }}>
       {panelOpen && (
-        <div className="fab-panel">
+        <div className={panelClass}>
           {pageInfo.kind === 'other' && !manga ? (
             <div>
               <h3 className="font-display manga-title">{currentUrlObj.host}</h3>
@@ -411,8 +451,9 @@ export default function ContentApp() {
 
       <button
         type="button"
-        className={fabClass}
+        className={`${fabClass} ${isDragging ? 'dragging' : ''}`}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         onClick={handleFabClick}
         aria-label="Manga Sync"
       >
