@@ -17,6 +17,14 @@ export function countUpdates(mangas: Manga[]): number {
   return mangas.filter(hasUpdate).length;
 }
 
+/**
+ * Count how many manga currently in the 'reading' category have new chapters.
+ * Used specifically for the extension icon badge.
+ */
+export function countReadingUpdates(mangas: Manga[]): number {
+  return mangas.filter((m) => m.status === 'reading' && hasUpdate(m)).length;
+}
+
 export function isSyncable(m: Manga): boolean {
   return SYNCABLE.includes(m.status);
 }

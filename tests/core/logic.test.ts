@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyProgress, countUpdates, groupByDomain, hasUpdate, isSyncable, newCount, sortMangas } from '../../src/core/logic';
+import { applyProgress, countReadingUpdates, countUpdates, groupByDomain, hasUpdate, isSyncable, newCount, sortMangas } from '../../src/core/logic';
 import type { Manga } from '../../src/core/types';
 
 function createManga(overrides: Partial<Manga> = {}): Manga {
@@ -36,6 +36,30 @@ describe('core/logic', () => {
 
     const upToDate = createManga({ status: 'reading', lastReadChapter: 15, latestChapter: 15 });
     expect(hasUpdate(upToDate)).toBe(false);
+  });
+
+  it('counts updates only for reading category with countReadingUpdates', () => {
+    const readingWithUpdate1 = createManga({ id: 'r1', status: 'reading', lastReadChapter: 10, latestChapter: 15 });
+    const readingWithUpdate2 = createManga({ id: 'r2', status: 'reading', lastReadChapter: 20, latestChapter: 22 });
+    const readingUpToDate = createManga({ id: 'r3', status: 'reading', lastReadChapter: 10, latestChapter: 10 });
+    const planWithUpdate = createManga({ id: 'p1', status: 'plan', lastReadChapter: null, latestChapter: 5 });
+    const completedWithUpdate = createManga({ id: 'c1', status: 'completed', lastReadChapter: 5, latestChapter: 10 });
+    const droppedWithUpdate = createManga({ id: 'd1', status: 'dropped', lastReadChapter: 5, latestChapter: 10 });
+
+    const list = [
+      readingWithUpdate1,
+      readingWithUpdate2,
+      readingUpToDate,
+      planWithUpdate,
+      completedWithUpdate,
+      droppedWithUpdate,
+    ];
+
+    // countUpdates includes reading + plan
+    expect(countUpdates(list)).toBe(3);
+
+    // countReadingUpdates only includes status === 'reading' with new chapters
+    expect(countReadingUpdates(list)).toBe(2);
   });
 
   it('checks syncable status (reading and plan only)', () => {

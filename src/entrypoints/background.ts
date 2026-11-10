@@ -1,5 +1,5 @@
 import { browser } from 'wxt/browser';
-import { applyProgress, countUpdates } from '../core/logic';
+import { applyProgress, countReadingUpdates } from '../core/logic';
 import type { Msg, Reply } from '../core/messages';
 import { getState, mutate } from '../core/storage';
 import { subscribeSite, syncContentScripts, unsubscribeSite } from '../core/sites';
@@ -94,7 +94,7 @@ async function handle(msg: Msg): Promise<Reply> {
 
 async function updateBadge(): Promise<void> {
   const { mangas } = await getState();
-  const n = countUpdates(Object.values(mangas));
+  const n = countReadingUpdates(Object.values(mangas));
   await browser.action.setBadgeText({ text: n > 0 ? String(n) : '' });
 }
 
