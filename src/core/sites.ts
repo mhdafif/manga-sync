@@ -31,6 +31,7 @@ export async function unsubscribeSite(origin: string): Promise<void> {
     s.sites = s.sites.filter((x) => x.origin !== origin);
   });
   await syncContentScripts();
+  await browser.permissions.remove({ origins: [`${origin}/*`] }).catch(() => undefined);
 }
 
 /** Make the registered content scripts match the subscribed sites exactly. */

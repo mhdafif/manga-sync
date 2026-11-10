@@ -211,6 +211,31 @@ export default defineBackground(() => {
     if (area === 'local') void updateBadge();
   });
 
+  // Automatically subscribe site if permissions are granted (e.g. from popup prompt)
+  browser.permissions.onAdded?.addListener((perms) => {
+    if (perms.origins) {
+      for (const originPattern of perms.origins) {
+        try {
+          const clean = originPattern.replace(/\/\*$/, '');
+          const u = new URL(clean);
+          void subscribeSite(u.origin);
+        } catch {}
+      }
+    }
+  });
+
+  browser.permissions.onRemoved?.addListener((perms) => {
+    if (perms.origins) {
+      for (const originPattern of perms.origins) {
+        try {
+          const clean = originPattern.replace(/\/\*$/, '');
+          const u = new URL(clean);
+          void unsubscribeSite(u.origin);
+        } catch {}
+      }
+    }
+  });
+
   browser.runtime.onInstalled.addListener(() => {
     void syncContentScripts();
     void updatePeriodicSyncAlarm();
