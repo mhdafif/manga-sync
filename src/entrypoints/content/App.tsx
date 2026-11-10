@@ -7,6 +7,26 @@ import { getFabPos, getState, onStateChange, setFabPos } from '../../core/storag
 import { STATUSES, STATUS_LABEL, type AppState, type PageInfo, type Status } from '../../core/types';
 import { mangaId } from '../../core/url';
 
+function getCornerCoordinates(corner: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'): { x: number; y: number } {
+  const marginX = 24;
+  const marginY = 24;
+  const width = typeof window !== 'undefined' ? window.innerWidth : 1000;
+  const height = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const btnSize = 50;
+
+  switch (corner) {
+    case 'top-left':
+      return { x: marginX, y: marginY };
+    case 'top-right':
+      return { x: Math.max(16, width - btnSize - marginX), y: marginY };
+    case 'bottom-left':
+      return { x: marginX, y: Math.max(16, height - btnSize - marginY) };
+    case 'bottom-right':
+    default:
+      return { x: Math.max(16, width - btnSize - marginX), y: Math.max(16, height - btnSize - marginY) };
+  }
+}
+
 export default function ContentApp() {
   const [appState, setAppState] = useState<AppState | null>(null);
   const [url, setUrl] = useState(() => window.location.href);
@@ -16,11 +36,9 @@ export default function ContentApp() {
   const [progressNotice, setProgressNotice] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Position state (default bottom-right: 24px from right, 24px from bottom)
-  const [pos, setPos] = useState<{ x: number; y: number }>(() => ({
-    x: typeof window !== 'undefined' ? Math.max(16, window.innerWidth - 170) : 100,
-    y: typeof window !== 'undefined' ? Math.max(16, window.innerHeight - 75) : 100,
-  }));
+  // Position state
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => getCornerCoordinates('bottom-right'));
+  const currentPosRef = useRef<{ x: number; y: number }>(pos);
   const isDraggingRef = useRef(false);
   const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number }>({
     startX: 0,
@@ -36,17 +54,54 @@ export default function ContentApp() {
     return onStateChange(setAppState);
   }, []);
 
-  // Restore saved FAB position
+  // Restore and sync position (corner vs draggable)
   useEffect(() => {
-    void getFabPos().then((saved) => {
-      if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
-        // Clamp saved coordinates to current viewport
-        const clampedX = Math.max(12, Math.min(window.innerWidth - 60, saved.x));
-        const clampedY = Math.max(12, Math.min(window.innerHeight - 60, saved.y));
-        setPos({ x: clampedX, y: clampedY });
+    const fabSetting = appState?.settings.fabPosition || 'draggable';
+    if (fabSetting !== 'draggable') {
+      const cornerPos = getCornerCoordinates(fabSetting);
+      setPos(cornerPos);
+      currentPosRef.current = cornerPos;
+    } else {
+      void getFabPos().then((saved) => {
+        if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+          const maxX = Math.max(12, window.innerWidth - 60);
+          const maxY = Math.max(12, window.innerHeight - 60);
+          const clamped = {
+            x: Math.max(12, Math.min(maxX, saved.x)),
+            y: Math.max(12, Math.min(maxY, saved.y)),
+          };
+          setPos(clamped);
+          currentPosRef.current = clamped;
+        }
+      });
+    }
+  }, [appState?.settings.fabPosition]);
+
+  // Window resize handler to keep FAB pinned or in viewport
+  useEffect(() => {
+    const handleResize = () => {
+      const fabSetting = appState?.settings.fabPosition || 'draggable';
+      if (fabSetting !== 'draggable') {
+        const cornerPos = getCornerCoordinates(fabSetting);
+        setPos(cornerPos);
+        currentPosRef.current = cornerPos;
+      } else {
+        setPos((prev) => {
+          const maxX = Math.max(12, window.innerWidth - 60);
+          const maxY = Math.max(12, window.innerHeight - 60);
+          const clamped = {
+            x: Math.max(12, Math.min(maxX, prev.x)),
+            y: Math.max(12, Math.min(maxY, prev.y)),
+          };
+          currentPosRef.current = clamped;
+          return clamped;
+        });
       }
-    });
-  }, []);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [appState?.settings.fabPosition]);
 
   // Detect SPA URL changes
   useEffect(() => {
@@ -148,6 +203,7 @@ export default function ContentApp() {
     isDraggingRef.current = true;
     hasMovedRef.current = false;
     setIsDragging(true);
+    currentPosRef.current = { x: pos.x, y: pos.y };
     dragStartRef.current = {
       startX: clientX,
       startY: clientY,
@@ -166,6 +222,7 @@ export default function ContentApp() {
       const maxY = Math.max(12, window.innerHeight - 60);
       const newX = Math.max(12, Math.min(maxX, dragStartRef.current.initX + dx));
       const newY = Math.max(12, Math.min(maxY, dragStartRef.current.initY + dy));
+      currentPosRef.current = { x: newX, y: newY };
       setPos({ x: newX, y: newY });
     };
 
@@ -177,7 +234,9 @@ export default function ContentApp() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
       if (hasMovedRef.current) {
-        setFabPos({ x: pos.x, y: pos.y }).catch(() => undefined);
+        const finalPos = currentPosRef.current;
+        setFabPos(finalPos).catch(() => undefined);
+        void send({ type: 'SET_SETTINGS', patch: { fabPosition: 'draggable' } });
       }
     };
 

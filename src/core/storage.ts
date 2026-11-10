@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
   bgTabFallback: true,
   periodicSync: false,
   periodicSyncInterval: 60,
+  fabPosition: 'draggable',
 };
 
 export function emptyState(): AppState {

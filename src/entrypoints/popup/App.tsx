@@ -20,7 +20,7 @@ import { countUpdates, groupByDomain, hasUpdate, newCount, sortMangas, timeAgo }
 import { send } from '../../core/messages';
 import { requestSite } from '../../core/sites';
 import { getState, onStateChange } from '../../core/storage';
-import { STATUSES, STATUS_LABEL, type AppState, type Manga, type Status } from '../../core/types';
+import { STATUSES, STATUS_LABEL, type AppState, type FabPositionSetting, type Manga, type Status } from '../../core/types';
 import { hostOf, isMangaWebsite, normalizeOrigin } from '../../core/url';
 
 export default function PopupApp() {
@@ -153,6 +153,13 @@ export default function PopupApp() {
     await send({
       type: 'SET_SETTINGS',
       patch: { periodicSyncInterval: interval },
+    });
+  };
+
+  const handleSetFabPosition = async (pos: FabPositionSetting) => {
+    await send({
+      type: 'SET_SETTINGS',
+      patch: { fabPosition: pos },
     });
   };
 
@@ -489,6 +496,24 @@ export default function PopupApp() {
                 onClick={() => void handleTogglePref('bgTabFallback')}
                 aria-label="Toggle background tab fallback"
               />
+            </div>
+
+            <div className="pref-row">
+              <div>
+                <span className="pref-label">Floating button position</span>
+                <div style={{ fontSize: '11px', color: '#9ca3af' }}>Corner or free draggable</div>
+              </div>
+              <select
+                className="select-interval"
+                value={appState?.settings.fabPosition || 'draggable'}
+                onChange={(e) => void handleSetFabPosition(e.target.value as FabPositionSetting)}
+              >
+                <option value="draggable">Draggable (Free)</option>
+                <option value="bottom-right">Bottom Right</option>
+                <option value="bottom-left">Bottom Left</option>
+                <option value="top-right">Top Right</option>
+                <option value="top-left">Top Left</option>
+              </select>
             </div>
 
             <div className="pref-row">

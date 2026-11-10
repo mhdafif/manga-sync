@@ -40,6 +40,8 @@ export interface Manga {
   addedAt: number;
 }
 
+export type FabPositionSetting = 'draggable' | 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+
 export interface Settings {
   /** Save the chapter being read automatically. */
   autoTrack: boolean;
@@ -49,6 +51,8 @@ export interface Settings {
   periodicSync: boolean;
   /** Interval in minutes between periodic background syncs. */
   periodicSyncInterval: number;
+  /** Position of floating action button on reading sites. */
+  fabPosition: FabPositionSetting;
 }
 
 export interface AppState {

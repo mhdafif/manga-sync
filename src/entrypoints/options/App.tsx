@@ -4,7 +4,7 @@ import { sortMangas, timeAgo } from '../../core/logic';
 import { send } from '../../core/messages';
 import { requestSite } from '../../core/sites';
 import { getState, onStateChange } from '../../core/storage';
-import { STATUS_LABEL, type AppState } from '../../core/types';
+import { STATUS_LABEL, type AppState, type FabPositionSetting } from '../../core/types';
 import { hostOf, normalizeOrigin } from '../../core/url';
 
 export default function OptionsApp() {
@@ -76,6 +76,13 @@ export default function OptionsApp() {
     await send({
       type: 'SET_SETTINGS',
       patch: { periodicSyncInterval: interval },
+    });
+  };
+
+  const handleSetFabPosition = async (pos: FabPositionSetting) => {
+    await send({
+      type: 'SET_SETTINGS',
+      patch: { fabPosition: pos },
     });
   };
 
@@ -311,6 +318,26 @@ export default function OptionsApp() {
                 onClick={() => void handleToggleSetting('bgTabFallback')}
                 aria-label="Toggle background tab fallback"
               />
+            </div>
+
+            <div className="setting-item">
+              <div>
+                <span className="setting-label">Floating button position</span>
+                <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>
+                  Position of the reading progress button on manga sites
+                </div>
+              </div>
+              <select
+                className="select-interval-options"
+                value={appState?.settings.fabPosition || 'draggable'}
+                onChange={(e) => void handleSetFabPosition(e.target.value as FabPositionSetting)}
+              >
+                <option value="draggable">Draggable (Free)</option>
+                <option value="bottom-right">Bottom Right corner</option>
+                <option value="bottom-left">Bottom Left corner</option>
+                <option value="top-right">Top Right corner</option>
+                <option value="top-left">Top Left corner</option>
+              </select>
             </div>
 
             <div className="setting-item">
