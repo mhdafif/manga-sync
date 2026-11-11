@@ -130,7 +130,7 @@ async function handle(msg: Msg): Promise<Reply> {
       return { ok: true };
 
     case 'SYNC_ALL':
-      await syncAll();
+      void syncAll().then(notifyNewChapters);
       return { ok: true };
 
     case 'OPEN_OPTIONS':
@@ -237,10 +237,16 @@ export default defineBackground(() => {
   });
 
   browser.runtime.onInstalled.addListener(() => {
+    void mutate((s) => {
+      s.isSyncing = false;
+    });
     void syncContentScripts();
     void updatePeriodicSyncAlarm();
   });
   browser.runtime.onStartup.addListener(() => {
+    void mutate((s) => {
+      s.isSyncing = false;
+    });
     void syncContentScripts();
     void updatePeriodicSyncAlarm();
   });

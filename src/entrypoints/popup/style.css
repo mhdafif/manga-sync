@@ -87,15 +87,21 @@ input, select {
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
-  transition: background-color 0.15s ease, transform 0.08s ease;
+  transition: background-color 0.15s ease, transform 0.08s ease, opacity 0.15s ease;
 }
 
-.btn-sync-all:hover {
+.btn-sync-all:hover:not(:disabled) {
   background: #6d28d9;
 }
 
-.btn-sync-all:active {
+.btn-sync-all:active:not(:disabled) {
   transform: translateY(1px);
+}
+
+.btn-sync-all:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Active Site Banner */

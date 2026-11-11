@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export function emptyState(): AppState {
-  return { sites: [], mangas: {}, settings: { ...DEFAULT_SETTINGS } };
+  return { sites: [], mangas: {}, settings: { ...DEFAULT_SETTINGS }, isSyncing: false };
 }
 
 export async function getState(): Promise<AppState> {
@@ -24,6 +24,7 @@ export async function getState(): Promise<AppState> {
     mangas: stored?.mangas ?? {},
     settings: { ...DEFAULT_SETTINGS, ...stored?.settings },
     lastSyncAllAt: stored?.lastSyncAllAt,
+    isSyncing: stored?.isSyncing ?? false,
   };
 }
 

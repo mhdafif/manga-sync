@@ -89,6 +89,7 @@ export interface AppState {
   mangas: Record<string, Manga>;
   settings: Settings;
   lastSyncAllAt?: number;
+  isSyncing?: boolean;
 }
 
 export interface ChapterInfo {

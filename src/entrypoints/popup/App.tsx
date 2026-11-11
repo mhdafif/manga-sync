@@ -45,7 +45,8 @@ export default function PopupApp() {
   const [appState, setAppState] = useState<AppState | null>(null);
   const [activeOrigin, setActiveOrigin] = useState<string | null>(null);
   const [activeTabInfo, setActiveTabInfo] = useState<{ url?: string; title?: string } | null>(null);
-  const [syncing, setSyncing] = useState(false);
+  const [localSyncing, setLocalSyncing] = useState(false);
+  const isSyncing = Boolean(appState?.isSyncing || localSyncing);
   const [statusFilter, setStatusFilter] = useState<'all' | Status>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [onlyUpdates, setOnlyUpdates] = useState(false);
@@ -136,9 +137,15 @@ export default function PopupApp() {
   };
 
   const handleSyncAll = async () => {
-    setSyncing(true);
-    await send({ type: 'SYNC_ALL' });
-    setTimeout(() => setSyncing(false), 1200);
+    if (isSyncing) return;
+    setLocalSyncing(true);
+    try {
+      await send({ type: 'SYNC_ALL' });
+    } catch {
+      // Ignore if channel was closed on popup dismiss
+    } finally {
+      setTimeout(() => setLocalSyncing(false), 500);
+    }
   };
 
   const handleOpenUrl = (url?: string) => {
@@ -851,9 +858,16 @@ export default function PopupApp() {
             {totalTracked} manga · {totalUpdates} with new chapters
           </div>
         </div>
-        <button type="button" className="btn-sync-all" onClick={handleSyncAll}>
-          <RefreshCw size={14} className={syncing ? 'spin' : ''} />
-          <span>{syncing ? 'Checking…' : 'Sync all'}</span>
+        <button
+          type="button"
+          className="btn-sync-all"
+          onClick={handleSyncAll}
+          disabled={isSyncing}
+          aria-busy={isSyncing}
+          title={isSyncing ? 'Syncing chapters in progress…' : 'Sync all manga'}
+        >
+          <RefreshCw size={14} className={isSyncing ? 'spin' : ''} />
+          <span>{isSyncing ? 'Checking…' : 'Sync all'}</span>
         </button>
       </div>
 

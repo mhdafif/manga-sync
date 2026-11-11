@@ -122,44 +122,63 @@ export async function runPool<T>(items: T[], limit: number, worker: (item: T) =>
   await Promise.all(lanes);
 }
 
+let activeSyncAllPromise: Promise<NewChapter[]> | null = null;
+
 /** Sync every manga that is Reading or Plan. Requests to the same domain are throttled sequentially to avoid rate limits. */
 export async function syncAll(): Promise<NewChapter[]> {
-  const { mangas } = await getState();
-  const syncable = Object.values(mangas).filter(isSyncable);
-  if (syncable.length === 0) return [];
-
-  // Group manga by domain origin
-  const byOrigin = new Map<string, typeof syncable>();
-  for (const m of syncable) {
-    const list = byOrigin.get(m.siteOrigin) ?? [];
-    list.push(m);
-    byOrigin.set(m.siteOrigin, list);
+  if (activeSyncAllPromise) {
+    return activeSyncAllPromise;
   }
 
-  const found: NewChapter[] = [];
-  const originEntries = [...byOrigin.entries()];
+  activeSyncAllPromise = (async () => {
+    await mutate((s) => {
+      s.isSyncing = true;
+    });
 
-  // Process different domains in parallel (max 2 at once), but manga belonging to
-  // the SAME domain are processed strictly sequentially with a polite delay (1500ms).
-  await runPool(originEntries, 2, async ([origin, originMangas]) => {
-    for (let i = 0; i < originMangas.length; i++) {
-      const m = originMangas[i];
-      if (isDomainInCooldown(origin)) {
-        // Abort further requests to this domain during this sync run if rate limited
-        break;
-      }
-      const news = await syncOne(m.id);
-      if (news) found.push(news);
+    try {
+      const { mangas } = await getState();
+      const syncable = Object.values(mangas).filter(isSyncable);
+      if (syncable.length === 0) return [];
 
-      // Polite delay between consecutive requests to the SAME domain
-      if (i < originMangas.length - 1 && !isDomainInCooldown(origin)) {
-        await new Promise((r) => setTimeout(r, 1500));
+      // Group manga by domain origin
+      const byOrigin = new Map<string, typeof syncable>();
+      for (const m of syncable) {
+        const list = byOrigin.get(m.siteOrigin) ?? [];
+        list.push(m);
+        byOrigin.set(m.siteOrigin, list);
       }
+
+      const found: NewChapter[] = [];
+      const originEntries = [...byOrigin.entries()];
+
+      // Process different domains in parallel (max 2 at once), but manga belonging to
+      // the SAME domain are processed strictly sequentially with a polite delay (1500ms).
+      await runPool(originEntries, 2, async ([origin, originMangas]) => {
+        for (let i = 0; i < originMangas.length; i++) {
+          const m = originMangas[i];
+          if (isDomainInCooldown(origin)) {
+            // Abort further requests to this domain during this sync run if rate limited
+            break;
+          }
+          const news = await syncOne(m.id);
+          if (news) found.push(news);
+
+          // Polite delay between consecutive requests to the SAME domain
+          if (i < originMangas.length - 1 && !isDomainInCooldown(origin)) {
+            await new Promise((r) => setTimeout(r, 1500));
+          }
+        }
+      });
+
+      return found;
+    } finally {
+      await mutate((s) => {
+        s.isSyncing = false;
+        s.lastSyncAllAt = Date.now();
+      });
+      activeSyncAllPromise = null;
     }
-  });
+  })();
 
-  await mutate((s) => {
-    s.lastSyncAllAt = Date.now();
-  });
-  return found;
+  return activeSyncAllPromise;
 }
