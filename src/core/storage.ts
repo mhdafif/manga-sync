@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
   bgTabFallback: true,
   periodicSync: false,
   periodicSyncInterval: 60,
+  syncMinDaysSinceUpdate: 3,
   fabPosition: 'draggable',
   notifications: false,
   theme: 'system',

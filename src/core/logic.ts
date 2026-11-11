@@ -30,6 +30,26 @@ export function isSyncable(m: Manga): boolean {
 }
 
 /**
+ * Check if a manga should be synced during Sync All based on its status and
+ * how many days have passed since its last update or sync check.
+ *
+ * @param manga The manga object
+ * @param minDaysSinceUpdate Minimum days since last update/sync (0 = all manga)
+ * @param now Current timestamp in ms (defaults to Date.now())
+ */
+export function shouldSyncManga(manga: Manga, minDaysSinceUpdate: number, now = Date.now()): boolean {
+  if (!isSyncable(manga)) return false;
+  if (!minDaysSinceUpdate || minDaysSinceUpdate <= 0) return true;
+
+  const lastTime = Math.max(manga.lastUpdatedAt ?? 0, manga.lastSyncedAt ?? 0);
+  // Never synced or updated yet -> always sync!
+  if (!lastTime) return true;
+
+  const thresholdMs = minDaysSinceUpdate * 86400 * 1000;
+  return now - lastTime >= thresholdMs;
+}
+
+/**
  * Progress only moves forward, so opening an old chapter never lowers it.
  * `force` is for an explicit "set my progress to this" action.
  */

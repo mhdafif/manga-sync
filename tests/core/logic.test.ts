@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyProgress, countReadingUpdates, countUpdates, groupByDomain, hasUpdate, isSyncable, newCount, sortMangas, timeAgo } from '../../src/core/logic';
+import { applyProgress, countReadingUpdates, countUpdates, groupByDomain, hasUpdate, isSyncable, newCount, shouldSyncManga, sortMangas, timeAgo } from '../../src/core/logic';
 import type { Manga } from '../../src/core/types';
 
 function createManga(overrides: Partial<Manga> = {}): Manga {
@@ -135,5 +135,46 @@ describe('core/logic', () => {
     expect(timeAgo(now - 3 * 3600_000)).toBe('3h ago');
     expect(timeAgo(now - 2 * 86400_000)).toBe('2d ago');
     expect(timeAgo(now - 45 * 86400_000)).toBe('1mo ago');
+  });
+
+  describe('shouldSyncManga (Sync All threshold)', () => {
+    const ONE_DAY_MS = 86400 * 1000;
+    const now = 1_000_000_000_000;
+
+    it('always syncs newly added manga with no previous update/sync timestamp', () => {
+      const m = createManga({ status: 'reading', lastUpdatedAt: undefined, lastSyncedAt: undefined });
+      expect(shouldSyncManga(m, 3, now)).toBe(true);
+    });
+
+    it('skips manga updated less than 3 days ago when threshold is 3', () => {
+      const m = createManga({ status: 'reading', lastUpdatedAt: now - 1 * ONE_DAY_MS });
+      expect(shouldSyncManga(m, 3, now)).toBe(false);
+    });
+
+    it('syncs manga updated 4 days ago when threshold is 3', () => {
+      const m = createManga({ status: 'reading', lastUpdatedAt: now - 4 * ONE_DAY_MS });
+      expect(shouldSyncManga(m, 3, now)).toBe(true);
+    });
+
+    it('skips manga if lastSyncedAt was recent even if lastUpdatedAt was older', () => {
+      const m = createManga({
+        status: 'reading',
+        lastUpdatedAt: now - 10 * ONE_DAY_MS,
+        lastSyncedAt: now - 2 * 3600 * 1000,
+      });
+      expect(shouldSyncManga(m, 3, now)).toBe(false);
+    });
+
+    it('syncs all syncable manga when threshold is 0 (disabled)', () => {
+      const recent = createManga({ status: 'reading', lastUpdatedAt: now - 3600 * 1000 });
+      expect(shouldSyncManga(recent, 0, now)).toBe(true);
+    });
+
+    it('never syncs non-syncable statuses (completed, dropped)', () => {
+      const completed = createManga({ status: 'completed', lastUpdatedAt: now - 10 * ONE_DAY_MS });
+      const dropped = createManga({ status: 'dropped', lastUpdatedAt: now - 10 * ONE_DAY_MS });
+      expect(shouldSyncManga(completed, 3, now)).toBe(false);
+      expect(shouldSyncManga(dropped, 3, now)).toBe(false);
+    });
   });
 });

@@ -90,6 +90,13 @@ export default function OptionsApp() {
     });
   };
 
+  const handleSetSyncMinDays = async (days: number) => {
+    await send({
+      type: 'SET_SETTINGS',
+      patch: { syncMinDaysSinceUpdate: days },
+    });
+  };
+
   const handleSetTheme = async (value: ThemeSetting) => {
     await send({ type: 'SET_SETTINGS', patch: { theme: value } });
   };
@@ -447,6 +454,29 @@ export default function OptionsApp() {
                   onChange={(e) => void handleImportFile(e)}
                 />
               </div>
+            </div>
+
+            <div className="setting-item">
+              <div>
+                <span className="setting-label">Sync All threshold</span>
+                <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '2px' }}>
+                  Only check manga updated more than X days ago during Sync All
+                </div>
+              </div>
+              <select
+                className="select-interval-options"
+                value={appState?.settings.syncMinDaysSinceUpdate ?? 3}
+                onChange={(e) => void handleSetSyncMinDays(Number(e.target.value))}
+              >
+                <option value={1}>Older than 1 day</option>
+                <option value={2}>Older than 2 days</option>
+                <option value={3}>Older than 3 days (Default)</option>
+                <option value={5}>Older than 5 days</option>
+                <option value={7}>Older than 7 days (1 week)</option>
+                <option value={14}>Older than 14 days (2 weeks)</option>
+                <option value={30}>Older than 30 days (1 month)</option>
+                <option value={0}>All manga (no filter)</option>
+              </select>
             </div>
 
             {appState?.settings.periodicSync && (

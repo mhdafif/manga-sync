@@ -77,6 +77,8 @@ export interface Settings {
   periodicSync: boolean;
   /** Interval in minutes between periodic background syncs. */
   periodicSyncInterval: number;
+  /** Only sync manga during Sync All if their last update/check was older than this many days (0 = all). */
+  syncMinDaysSinceUpdate: number;
   /** Position of floating action button on reading sites. */
   fabPosition: FabPositionSetting;
   /** Desktop notification when periodic sync finds a new chapter. */

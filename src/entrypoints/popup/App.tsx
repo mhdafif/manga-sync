@@ -349,6 +349,13 @@ export default function PopupApp() {
     });
   };
 
+  const handleSetSyncMinDays = async (days: number) => {
+    await send({
+      type: 'SET_SETTINGS',
+      patch: { syncMinDaysSinceUpdate: days },
+    });
+  };
+
   const handleSetTheme = async (value: ThemeSetting) => {
     await send({ type: 'SET_SETTINGS', patch: { theme: value } });
   };
@@ -764,6 +771,29 @@ export default function PopupApp() {
                 onClick={() => void handleTogglePref('notifications')}
                 aria-label="Toggle desktop notifications"
               />
+            </div>
+
+            <div className="pref-row">
+              <div>
+                <span className="pref-label">Sync threshold</span>
+                <div style={{ fontSize: '11px', color: 'var(--text-faint)' }}>
+                  Only check manga updated &gt; X days ago
+                </div>
+              </div>
+              <select
+                className="select-interval"
+                value={appState?.settings.syncMinDaysSinceUpdate ?? 3}
+                onChange={(e) => void handleSetSyncMinDays(Number(e.target.value))}
+              >
+                <option value={1}>&gt; 1 day ago</option>
+                <option value={2}>&gt; 2 days ago</option>
+                <option value={3}>&gt; 3 days (Default)</option>
+                <option value={5}>&gt; 5 days ago</option>
+                <option value={7}>&gt; 7 days (1 wk)</option>
+                <option value={14}>&gt; 14 days (2 wks)</option>
+                <option value={30}>&gt; 30 days (1 mo)</option>
+                <option value={0}>All manga (no filter)</option>
+              </select>
             </div>
 
             {appState?.settings.periodicSync && (

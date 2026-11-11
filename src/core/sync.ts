@@ -1,6 +1,6 @@
 import { getAdapter } from '../adapters';
 import { fetchSeriesHtml, fetchViaTab } from './fetch';
-import { isSyncable } from './logic';
+import { isSyncable, shouldSyncManga } from './logic';
 import { getState, mutate } from './storage';
 import type { SeriesData } from './types';
 import { titleFromSlug } from './url';
@@ -136,8 +136,10 @@ export async function syncAll(): Promise<NewChapter[]> {
     });
 
     try {
-      const { mangas } = await getState();
-      const syncable = Object.values(mangas).filter(isSyncable);
+      const { mangas, settings } = await getState();
+      const minDays = settings.syncMinDaysSinceUpdate ?? 3;
+      const now = Date.now();
+      const syncable = Object.values(mangas).filter((m) => shouldSyncManga(m, minDays, now));
       if (syncable.length === 0) return [];
 
       // Group manga by domain origin

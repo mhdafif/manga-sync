@@ -99,8 +99,16 @@ async function handle(msg: Msg): Promise<Reply> {
       const result = await mutate((s) => {
         const r = mergeMangas(s.mangas, msg.mangas);
         if (msg.settings) {
-          const { fabPosition, autoTrack, bgTabFallback, periodicSync, periodicSyncInterval, notifications, theme } =
-            msg.settings;
+          const {
+            fabPosition,
+            autoTrack,
+            bgTabFallback,
+            periodicSync,
+            periodicSyncInterval,
+            syncMinDaysSinceUpdate,
+            notifications,
+            theme,
+          } = msg.settings;
           s.settings = {
             ...s.settings,
             ...(fabPosition && { fabPosition }),
@@ -108,6 +116,7 @@ async function handle(msg: Msg): Promise<Reply> {
             ...(bgTabFallback !== undefined && { bgTabFallback }),
             ...(periodicSync !== undefined && { periodicSync }),
             ...(periodicSyncInterval !== undefined && { periodicSyncInterval }),
+            ...(syncMinDaysSinceUpdate !== undefined && { syncMinDaysSinceUpdate }),
             ...(notifications !== undefined && { notifications }),
             ...(theme && { theme }),
           };
