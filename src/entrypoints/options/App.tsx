@@ -287,54 +287,76 @@ export default function OptionsApp() {
                       </td>
                     </tr>
                   ) : (
-                    filteredMangas.map((m) => (
-                      <tr key={m.id}>
-                        <td className="manga-col-title">
-                          {m.pinned && <Pin size={14} className="col-pin-icon" fill="currentColor" />}
-                          {m.muted && <BellOff size={14} className="col-muted-icon" aria-label="Muted" />}
-                          <a
-                            className="title-link"
-                            href={m.seriesUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            title={`${m.title} — open series page`}
-                          >
-                            {m.title}
-                          </a>
-                        </td>
-                        {selectedDomain === 'all' && (
-                          <td className="col-domain">{hostOf(m.siteOrigin)}</td>
-                        )}
-                        <td className="col-status">
-                          <span className="status-pill">{STATUS_LABEL[m.status]}</span>
-                        </td>
-                        <td className="col-read">
-                          <div className="col-ch-num">{m.lastReadChapter ?? '—'}</div>
-                          {m.lastReadAt && (
-                            <div className="col-ch-time">
-                              {timeAgo(m.lastReadAt)}
+                    filteredMangas.map((m) => {
+                      const firstLetter = (m.title || '?')[0].toUpperCase();
+                      return (
+                        <tr key={m.id}>
+                          <td className="manga-col-title">
+                            <a
+                              className="table-cover-link"
+                              href={m.seriesUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={`${m.title} — open series page`}
+                              tabIndex={-1}
+                              aria-hidden="true"
+                            >
+                              <div className="table-cover">
+                                {m.coverUrl ? (
+                                  <img src={m.coverUrl} alt="" className="table-cover-img" loading="lazy" />
+                                ) : (
+                                  <span className="table-cover-fallback">{firstLetter}</span>
+                                )}
+                              </div>
+                            </a>
+                            <div className="table-title-wrap">
+                              {m.pinned && <Pin size={14} className="col-pin-icon" fill="currentColor" />}
+                              {m.muted && <BellOff size={14} className="col-muted-icon" aria-label="Muted" />}
+                              <a
+                                className="title-link"
+                                href={m.seriesUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                title={`${m.title} — open series page`}
+                              >
+                                {m.title}
+                              </a>
                             </div>
+                          </td>
+                          {selectedDomain === 'all' && (
+                            <td className="col-domain">{hostOf(m.siteOrigin)}</td>
                           )}
-                        </td>
-                        <td className="col-latest">
-                          <div className="col-ch-num">{m.latestChapter ?? '—'}</div>
-                          {(m.lastUpdatedAt || m.lastSyncedAt) && (
-                            <div className="col-ch-time">
-                              {timeAgo(m.lastUpdatedAt || m.lastSyncedAt)}
-                            </div>
-                          )}
-                        </td>
-                        <td className="col-action">
-                          <button
-                            type="button"
-                            className="btn-remove-link"
-                            onClick={() => void handleRemoveManga(m.id)}
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                          <td className="col-status">
+                            <span className="status-pill">{STATUS_LABEL[m.status]}</span>
+                          </td>
+                          <td className="col-read">
+                            <div className="col-ch-num">{m.lastReadChapter ?? '—'}</div>
+                            {m.lastReadAt && (
+                              <div className="col-ch-time">
+                                {timeAgo(m.lastReadAt)}
+                              </div>
+                            )}
+                          </td>
+                          <td className="col-latest">
+                            <div className="col-ch-num">{m.latestChapter ?? '—'}</div>
+                            {(m.lastUpdatedAt || m.lastSyncedAt) && (
+                              <div className="col-ch-time">
+                                {timeAgo(m.lastUpdatedAt || m.lastSyncedAt)}
+                              </div>
+                            )}
+                          </td>
+                          <td className="col-action">
+                            <button
+                              type="button"
+                              className="btn-remove-link"
+                              onClick={() => void handleRemoveManga(m.id)}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
