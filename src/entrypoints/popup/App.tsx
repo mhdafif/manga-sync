@@ -854,7 +854,7 @@ export default function PopupApp() {
         </div>
 
         <div className="popup-footer">
-          <span>Manga Sync v0.1.0</span>
+          <span>Manga Sync v1.0.0</span>
           <button
             type="button"
             className="btn-options"

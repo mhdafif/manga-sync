@@ -2,7 +2,7 @@
   "name": "manga-sync",
   "description": "Track the last chapter you read and see which manga have new chapters.",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
