@@ -1006,6 +1006,10 @@ input, select {
 }
 
 /* In-popup Options view */
+.settings-header {
+  border-bottom: 1px solid var(--border);
+}
+
 .options-scroll-body {
   flex: 1 1 auto;
   min-height: 0;

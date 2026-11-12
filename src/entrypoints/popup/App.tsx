@@ -628,7 +628,7 @@ export default function PopupApp() {
   if (view === 'options') {
     return (
       <div className="popup-container">
-        <div className="header" style={{ borderBottom: '1px solid #f3f4f6' }}>
+        <div className="header settings-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               type="button"
