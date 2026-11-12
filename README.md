@@ -171,34 +171,6 @@ Manga Sync uses a modular adapter architecture in `src/adapters/`:
 
 ---
 
-## 📦 How to Publish to Chrome Web Store
-
-1. **Create a Developer Account**:
-   - Visit the [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).
-   - Sign in with your Google account and pay the one-time $5 USD registration fee.
-
-2. **Generate the Extension Zip Package**:
-   ```bash
-   pnpm zip
-   ```
-   This creates a production `.zip` package in `.output/` ready for store upload.
-
-3. **Store Listing Assets**:
-   - **Icons**: 16x16, 32x32, 48x48, 128x128 (found in `public/icon/`).
-   - **Promotional Tile (1280x800 / 1280x640)**: Upload `docs/screenshots/promo-banner.png`.
-   - **Screenshots (1280x800)**: Upload `docs/screenshots/popup-list-light.png`, `docs/screenshots/popup-dark.png`, `docs/screenshots/reader-fab.png`, and `docs/screenshots/options-dashboard.png`.
-
-4. **Permissions & Privacy Justification**:
-   - **Single Purpose**: *"Track reading progress and chapter updates across user-whitelisted comic and manga websites."*
-   - **Permissions**:
-     - `storage`: Saves reading progress and user settings locally.
-     - `scripting` & `optional_host_permissions`: Injects the floating progress button only on sites the user explicitly subscribes to.
-     - `alarms`: Periodically checks for new chapter releases in the background.
-     - `notifications`: Alerts the user when new chapters are available.
-   - **Privacy Policy**: Explicitly mention that all data is stored on-device and no user data is collected or transmitted to external servers.
-
----
-
 ## 📄 License
 
 Distributed under the [MIT License](LICENSE).
