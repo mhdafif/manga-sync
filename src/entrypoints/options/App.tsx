@@ -298,8 +298,7 @@ export default function OptionsApp() {
                               target="_blank"
                               rel="noreferrer"
                               title={`${m.title} — open series page`}
-                              tabIndex={-1}
-                              aria-hidden="true"
+                              aria-label={`${m.title} cover`}
                             >
                               <div className="table-cover">
                                 {m.coverUrl ? (
